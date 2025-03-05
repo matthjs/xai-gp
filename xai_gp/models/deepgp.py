@@ -10,6 +10,7 @@ from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.models.deep_gps import DeepGP
 from torch import Tensor
 from torch.utils.data import DataLoader
+from xai_gp.models.deepgplayers import DeepGPHiddenLayer
 from xai_gp.models.gpbase import GPytorchModel
 
 
