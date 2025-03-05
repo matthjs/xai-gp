@@ -69,35 +69,5 @@ class DSPPModel(DSPP, GPytorchModel):
             dist = self.outcome_transform.untransform(dist)
         return dist
 
-    def predict(self, test_loader: DataLoader) -> Tuple[Tensor, Tensor, Tensor]:
-        with torch.no_grad(), gpytorch.settings.fast_computations(log_prob=False, solves=False):
-            mus, variances, lls = [], [], []
-            for x_batch, y_batch in test_loader:
-                preds = self.likelihood(self(x_batch, mean_input=x_batch))
-
-                # Compute log likelihood using quadrature weights
-                base_ll = self.likelihood.log_marginal(y_batch, self(x_batch))
-                weighted_ll = self.quad_weights.unsqueeze(-1) + base_ll
-                batch_ll = weighted_ll.logsumexp(dim=0)
-
-                # Compute weighted mean and variance
-                weights = torch.softmax(self.quad_weights, dim=0)
-                comp_means = preds.mean
-                comp_vars = preds.variance
-
-                overall_mean = (weights.unsqueeze(-1) * comp_means).sum(0)
-                diff = comp_means - overall_mean.unsqueeze(0)
-                overall_var = (weights.unsqueeze(-1) * (comp_vars + diff.pow(2))).sum(0)
-
-                mus.append(overall_mean)
-                variances.append(overall_var)
-                lls.append(batch_ll)
-
-        return (
-            torch.cat(mus, dim=0),
-            torch.cat(variances, dim=0),
-            torch.cat(lls, dim=0),
-        )
-
     def get_intermediate_outputs(self) -> List[Tensor]:
         return self.intermediate_outputs

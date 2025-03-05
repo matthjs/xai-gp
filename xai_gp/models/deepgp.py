@@ -108,32 +108,6 @@ class DeepGPModel(DeepGP, GPytorchModel):
             dist = self.outcome_transform.untransform(dist)
         return dist
 
-    def predict(self, test_loader: DataLoader) -> Tuple[Tensor, Tensor, Tensor]:
-        """
-        Make predictions on the test set.
-        NOTE: This function should not be used in practice as it does not apply
-        any configured input output transformations and only exists
-        to ensure compatibility with some Jupyter notebooks.
-
-        :param test_loader: DataLoader for the test set.
-        :return: Means, variances, and log likelihoods of the predictions.
-        """
-        with torch.no_grad():
-            mus = []
-            variances = []
-            lls = []
-            for x_batch, y_batch in test_loader:
-                preds = self.likelihood(self(x_batch))
-                mus.append(preds.mean)
-                variances.append(preds.variance)
-                lls.append(self.likelihood.log_marginal(y_batch, self(x_batch)))
-
-        return (
-            torch.cat(mus, dim=-1),
-            torch.cat(variances, dim=-1),
-            torch.cat(lls, dim=-1),
-        )
-
     def get_intermediate_outputs(self) -> List[Tensor]:
         """
         Get the intermediate outputs from the hidden layers.
