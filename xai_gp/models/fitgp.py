@@ -1,11 +1,7 @@
-import os
-from typing import Optional
-import gpytorch
 import torch
 from gpytorch import ExactMarginalLogLikelihood
-from gpytorch.mlls import VariationalELBO, DeepApproximateMLL, MarginalLogLikelihood
+from gpytorch.mlls import VariationalELBO, DeepApproximateMLL
 from loguru import logger
-from torch.utils.data import TensorDataset, DataLoader
 import time
 from xai_gp.models.gpbase import GPytorchModel
 

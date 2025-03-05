@@ -3,13 +3,11 @@ Based on https://github.com/pytorch/botorch/issues/1750 and
 https://docs.gpytorch.ai/en/stable/examples/05_Deep_Gaussian_Processes/Deep_Gaussian_Processes.html
 """
 from typing import Any, Dict, List, Union, Tuple
-
 import gpytorch
 import torch
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.models.deep_gps import DeepGP
 from torch import Tensor
-from torch.utils.data import DataLoader
 from xai_gp.models.deepgplayers import DeepGPHiddenLayer
 from xai_gp.models.gpbase import GPytorchModel
 

@@ -1,5 +1,4 @@
 from typing import Optional
-
 import gpytorch
 import torch
 from gpytorch.distributions import MultivariateNormal

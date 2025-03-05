@@ -3,9 +3,8 @@ import gpytorch
 import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.models.deep_gps.dspp import DSPPLayer, DSPP
+from gpytorch.models.deep_gps.dspp import DSPP
 from torch import Tensor
-from torch.utils.data import DataLoader
 from xai_gp.models.deepgplayers import DSPPHiddenLayer
 from xai_gp.models.gpbase import GPytorchModel
 
@@ -19,26 +18,27 @@ class DSPPModel(DSPP, GPytorchModel):
                  num_inducing_points: int = 128,
                  input_transform: Any = None,
                  outcome_transform: Any = None):
-        super().__init__(Q=Q)
-
+        super().__init__(num_quad_sites=Q)
         input_dims = train_x_shape[-1]
-        self.layers = torch.nn.ModuleList()
+        self.layers = []
         self.Q = Q
 
         # Build hidden layers
         for layer_config in hidden_layers_config:
-            layer = DSPPHiddenLayer(
+            hidden_layer = DSPPHiddenLayer(
                 input_dims=input_dims,
                 output_dims=layer_config['output_dims'],
                 num_inducing=num_inducing_points,
                 mean_type=layer_config['mean_type'],
                 Q=Q
             )
-            self.layers.append(layer)
-            input_dims = layer.output_dims if layer.output_dims else 1
+            self.layers.append(hidden_layer)
+            input_dims = hidden_layer.output_dims if hidden_layer.output_dims else 1
 
+        self.layers = torch.nn.ModuleList(self.layers)
         self.likelihood = GaussianLikelihood()
         self._num_outputs = 1
+        self.double()
         self.intermediate_outputs = None
 
         # Initialize transforms
