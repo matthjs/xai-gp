@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Union, Tuple
 import gpytorch
 import torch
 from gpytorch.distributions import MultivariateNormal
-from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.likelihoods import GaussianLikelihood, SoftmaxLikelihood
 from gpytorch.models.deep_gps.dspp import DSPP
 from pandas import Categorical
 from torch import Tensor
@@ -18,7 +18,8 @@ class DSPPModel(DSPP, GPytorchModel):
                  Q: int = 8,
                  num_inducing_points: int = 128,
                  input_transform: Any = None,
-                 outcome_transform: Any = None):
+                 outcome_transform: Any = None,
+                 classification: bool = False):
         super().__init__(num_quad_sites=Q)
         input_dims = train_x_shape[-1]
         self.layers = []
@@ -36,8 +37,9 @@ class DSPPModel(DSPP, GPytorchModel):
             self.layers.append(hidden_layer)
             input_dims = hidden_layer.output_dims if hidden_layer.output_dims else 1
 
+        self.out_dim = input_dims
         self.layers = torch.nn.ModuleList(self.layers)
-        self.likelihood = GaussianLikelihood()
+        self.likelihood = SoftmaxLikelihood(num_classes=self.out_dim, num_features=self.out_dim) if classification else GaussianLikelihood()
         self._num_outputs = 1
         self.double()
         self.intermediate_outputs = None

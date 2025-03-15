@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Union, Tuple
 import gpytorch
 import torch
 from gpytorch.distributions import MultivariateNormal
-from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.likelihoods import GaussianLikelihood, SoftmaxLikelihood
 from gpytorch.models.deep_gps import DeepGP
 from torch import Tensor
 from torch.distributions import Categorical
@@ -26,7 +26,8 @@ class DeepGPModel(DeepGP, GPytorchModel):
                  hidden_layers_config: List[Dict[str, Any]],
                  num_inducing_points: int = 128,
                  input_transform: Any = None,
-                 outcome_transform: Any = None):
+                 outcome_transform: Any = None,
+                 classification: bool = False):
         """
         Constructor for DeepGPModel.
 
@@ -57,8 +58,9 @@ class DeepGPModel(DeepGP, GPytorchModel):
             input_dims = layer_config['output_dims']
 
         # Add all layers as module list
+        self.out_dim = input_dims
         self.layers = torch.nn.ModuleList(self.layers)
-        self.likelihood = GaussianLikelihood()   # For classification I believe replace with SoftMaxLikelihood.
+        self.likelihood = SoftmaxLikelihood(num_classes=self.out_dim, num_features=self.out_dim) if classification else GaussianLikelihood()
         self._num_outputs = 1
         self.double()
         self.intermediate_outputs = None
