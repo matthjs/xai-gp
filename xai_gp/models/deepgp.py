@@ -55,7 +55,7 @@ class DeepGPModel(DeepGP, GPytorchModel):
 
         # Add all layers as module list
         self.layers = torch.nn.ModuleList(self.layers)
-        self.likelihood = GaussianLikelihood()
+        self.likelihood = GaussianLikelihood()   # For classification I believe replace with SoftMaxLikelihood.
         self._num_outputs = 1
         self.double()
         self.intermediate_outputs = None
