@@ -56,7 +56,9 @@ class DSPPHiddenLayer(DSPPLayer):
             # As in Salimbeni et al. 2017, we find that using a linear mean for the hidden layer improves performance.
             self.mean_module = LinearMean(input_dims, batch_shape=batch_shape)
 
-        self.covar_module = ScaleKernel(MaternKernel(batch_shape=batch_shape, ard_num_dims=input_dims),
+        # Example in documentation used Matern kernel, but for consistency with DGP use
+        # RBF kernel.
+        self.covar_module = ScaleKernel(RBFKernel(batch_shape=batch_shape, ard_num_dims=input_dims),
                                         batch_shape=batch_shape, ard_num_dims=None)
 
     def forward(self, x, mean_input=None, **kwargs):
