@@ -4,6 +4,7 @@ import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.models.deep_gps.dspp import DSPP
+from pandas import Categorical
 from torch import Tensor
 from xai_gp.models.deepgplayers import DSPPHiddenLayer
 from xai_gp.models.gpbase import GPytorchModel
@@ -53,16 +54,27 @@ class DSPPModel(DSPP, GPytorchModel):
             self.intermediate_outputs.append(x)
         return x
 
-    def posterior(self,
-                  X: Tensor,
-                  observation_noise: Union[bool, Tensor] = False,
-                  *args, **kwargs) -> MultivariateNormal:
+    def posterior(
+            self,
+            X: Tensor,
+            apply_likelihood: bool = False,  # Renamed from observation_noise
+            *args, **kwargs
+    ) -> Union[MultivariateNormal, Categorical]:
+        """
+        Compute the posterior distribution.
+
+        :param X: Input tensor.
+        :param apply_likelihood: Whether to apply the likelihood transformation.
+                                 For classification, this returns class probabilities.
+                                 For regression, this adds observation noise.
+        :return: Posterior distribution.
+        """
         self.eval()
         X = self.transform_inputs(X)
 
         with torch.no_grad():
             dist = self(X, mean_input=X)
-            if observation_noise:
+            if apply_likelihood:
                 dist = self.likelihood(dist)
 
         if self.outcome_transform is not None:

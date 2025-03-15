@@ -5,9 +5,12 @@ https://docs.gpytorch.ai/en/stable/examples/05_Deep_Gaussian_Processes/Deep_Gaus
 from typing import Any, Dict, List, Union, Tuple
 import gpytorch
 import torch
+from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.models.deep_gps import DeepGP
 from torch import Tensor
+from torch.distributions import Categorical
+
 from xai_gp.models.deepgplayers import DeepGPHiddenLayer
 from xai_gp.models.gpbase import GPytorchModel
 
@@ -80,15 +83,19 @@ class DeepGPModel(DeepGP, GPytorchModel):
             self.intermediate_outputs.append(x)
         return x
 
-    def posterior(self,
-                  X: Tensor,
-                  observation_noise: Union[bool, Tensor] = False,
-                  *args, **kwargs) -> gpytorch.distributions.MultivariateNormal:
+    def posterior(
+            self,
+            X: Tensor,
+            apply_likelihood: bool = False,  # Renamed from observation_noise
+            *args, **kwargs
+    ) -> Union[MultivariateNormal, Categorical]:
         """
         Compute the posterior distribution.
 
         :param X: Input tensor.
-        :param observation_noise: Whether to add observation noise. Default is False.
+        :param apply_likelihood: Whether to apply the likelihood transformation.
+                                 For classification, this returns class probabilities.
+                                 For regression, this adds observation noise.
         :return: Posterior distribution.
         """
         self.eval()  # make sure model is in eval mode
@@ -98,8 +105,10 @@ class DeepGPModel(DeepGP, GPytorchModel):
         with torch.no_grad() and gpytorch.settings.num_likelihood_samples(10):
             dist = self(X)  # Compute the posterior distribution
 
-            if observation_noise:
-                dist = self.likelihood(dist, *args, **kwargs)  # Add observation noise
+            if apply_likelihood:
+                dist = self.likelihood(dist, *args, **kwargs)  # Add observation noise in case of regression
+                # apply softmax in case of classification.
+                # Not applying likelihood gives you the logits in case of classification.
 
         if self.outcome_transform is not None:
             # Ensure you have a GPyTorch-compatible transform here
