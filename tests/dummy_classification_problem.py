@@ -54,6 +54,8 @@ if __name__ == "__main__":
     fit_gp(model, train_loader, 10, optimizer, gp_mode='DSPP')
 
     # Evaluate the model
+    # This is more explicit but can also use model.posterior(test_x, apply_likelihood=True)
+    # and then do probs.argmax(dim=-1).
     model.eval()
     with torch.no_grad():
         latent_dist = model(test_x)  # Latent function values
