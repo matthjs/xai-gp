@@ -60,7 +60,7 @@ class DSPPModel(DSPP, GPytorchModel):
         self.eval()
         X = self.transform_inputs(X)
 
-        with torch.no_grad(), gpytorch.settings.num_likelihood_samples(10):
+        with torch.no_grad():
             dist = self(X, mean_input=X)
             if observation_noise:
                 dist = self.likelihood(dist)
