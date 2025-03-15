@@ -4,25 +4,30 @@ from gpytorch.mlls import VariationalELBO, DeepApproximateMLL
 from loguru import logger
 import time
 from xai_gp.models.gpbase import GPytorchModel
+from gpytorch.mlls import DeepPredictiveLogLikelihood
 
 
 def fit_gp(model: GPytorchModel,
            data_loader,
            num_epochs: int,
            optimizer: torch.optim.Optimizer,
-           gp_mode: str = 'deep_gp'
+           gp_mode: str = 'DGP'
            ):
     """
-    Helper function for fitting gps to data
+    Helper function for fitting gps to data.
+    Make sure gp_mode corresponds to the GP model passed!
     """
     model.train()
 
     num_samples = len(data_loader.dataset)
 
-    # Construct marginal log likelihood.
-    if gp_mode == 'deep_gp':
+    # Construct (marginal) log likelihood.
+    if gp_mode == 'DGP':
         mll = DeepApproximateMLL(VariationalELBO(model.likelihood, model, num_samples))
-    elif gp_mode == 'variational_gp':
+    elif gp_mode == 'DSPP':
+        # TODO: beta is a hyperparameter of DSPP
+        mll = DeepPredictiveLogLikelihood(model.likelihood, model, num_data=num_samples, beta=0.05)
+    elif gp_mode == 'SVGP':
         mll = VariationalELBO(model.likelihood, model.model, num_samples)
     else:
         mll = ExactMarginalLogLikelihood(model.likelihood, model)

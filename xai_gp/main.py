@@ -36,6 +36,6 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    fit_gp(model, train_loader, 10, optimizer)
+    fit_gp(model, train_loader, 10, optimizer, gp_mode='DSPP')
 
 
