@@ -1,0 +1,6 @@
+# CASP dataset configuration
+
+path: "data/CASP.csv"
+feature_cols: [1, 2, 3, 4, 5, 6, 7, 8, 9]  # F1 through F9 features
+target_col: 0  # RMSD target
+test_size: 0.2
