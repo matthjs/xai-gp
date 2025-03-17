@@ -17,7 +17,7 @@ from xai_gp.models.gpbase import GPytorchModel
 
 class DeepGPModel(DeepGP, GPytorchModel):
     """
-    Deep Gaussian Process Model class implementing BoTorch and GPyTorch interfaces.
+    Deep Gaussian Process Model class implementing GPyTorch interfaces.
     This class currently does not allow customization of kernel functions and uses RBF for each unit by default.
     """
 
