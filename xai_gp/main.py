@@ -56,7 +56,9 @@ def prepare_data(cfg, device):
 
 def is_gp_model(model):
     """Check if the model is a GP model."""
-    return isinstance(model, (DeepGPModel, DSPPModel))
+    is_instance = isinstance(model, (DeepGPModel, DSPPModel))
+    is_class = model in (DeepGPModel, DSPPModel)
+    return is_instance or is_class
 
 
 def initialize_model(cfg, input_shape, device):
@@ -79,6 +81,7 @@ def initialize_model(cfg, input_shape, device):
             num_inducing_points=cfg.model.num_inducing_points,
         ).to(device)
     else:
+        
         # For ensemble models, initialize with TwoHeadMLP as the base model
         input_dim = input_shape[1]
         output_dim = cfg.model.output_dim

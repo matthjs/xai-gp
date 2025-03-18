@@ -1,9 +1,9 @@
 import torch
 from gpytorch.mlls import VariationalELBO, DeepApproximateMLL, ExactMarginalLogLikelihood
-from loguru import logger
 import time
 from xai_gp.models.gp.gpbase import GPytorchModel
 from gpytorch.mlls import DeepPredictiveLogLikelihood
+from xai_gp.utils.training_utils import log_training_start, log_epoch_stats, log_training_end
 
 
 def fit_gp(model: GPytorchModel,
@@ -31,8 +31,7 @@ def fit_gp(model: GPytorchModel,
     else:
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
 
-    logger.info(f"Training {gp_mode} model for {num_epochs} epochs on {num_samples} samples...")
-    start_time = time.time()
+    start_time = log_training_start(gp_mode, num_epochs, num_samples)
 
     epoch_loss = 0
     # This optimizes the hyperparameters so noise variance, inducing points etc.
@@ -55,17 +54,7 @@ def fit_gp(model: GPytorchModel,
             epoch_loss += loss.item()
 
         # Log epoch statistics
-        epoch_time = time.time() - epoch_start_time
-        avg_epoch_loss = epoch_loss / len(data_loader)
-        logger.info(
-            f"Epoch {epoch + 1}/{num_epochs} - "
-            f"Loss: {avg_epoch_loss:.4f} - "
-            f"Time: {epoch_time:.2f}s"
-        )
+        log_epoch_stats(epoch, num_epochs, epoch_loss, len(data_loader), epoch_start_time)
 
     # Log final training summary
-    total_time = time.time() - start_time
-    logger.info(
-        f"Training completed in {total_time:.2f}s. "
-        f"Final Loss: {epoch_loss / len(data_loader):.4f}"
-    )
+    log_training_end(start_time, epoch_loss, len(data_loader))
