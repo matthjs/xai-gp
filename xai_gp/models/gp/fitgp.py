@@ -3,7 +3,7 @@ from gpytorch import ExactMarginalLogLikelihood
 from gpytorch.mlls import VariationalELBO, DeepApproximateMLL
 from loguru import logger
 import time
-from xai_gp.models.gpbase import GPytorchModel
+from xai_gp.models.gp.gpbase import GPytorchModel
 from gpytorch.mlls import DeepPredictiveLogLikelihood
 
 

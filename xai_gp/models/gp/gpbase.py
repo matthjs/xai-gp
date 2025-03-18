@@ -9,7 +9,7 @@ from torch.nn import Module
 
 class GPytorchModel(ABC, Module):
     @abstractmethod
-    def forward(self, inputs: Tensor) -> Tensor:
+    def forward(self, inputs: Tensor) -> MultivariateNormal:
         pass
 
     @abstractmethod

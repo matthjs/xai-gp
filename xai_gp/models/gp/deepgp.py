@@ -2,7 +2,7 @@
 Based on https://github.com/pytorch/botorch/issues/1750 and
 https://docs.gpytorch.ai/en/stable/examples/05_Deep_Gaussian_Processes/Deep_Gaussian_Processes.html
 """
-from typing import Any, Dict, List, Union, Tuple
+from typing import Any, Dict, List, Union
 import gpytorch
 import torch
 from gpytorch.distributions import MultivariateNormal
@@ -11,8 +11,8 @@ from gpytorch.models.deep_gps import DeepGP
 from torch import Tensor
 from torch.distributions import Categorical
 
-from xai_gp.models.deepgplayers import DeepGPHiddenLayer
-from xai_gp.models.gpbase import GPytorchModel
+from xai_gp.models.gp.deepgplayers import DeepGPHiddenLayer
+from xai_gp.models.gp.gpbase import GPytorchModel
 
 
 class DeepGPModel(DeepGP, GPytorchModel):
@@ -70,13 +70,13 @@ class DeepGPModel(DeepGP, GPytorchModel):
         if input_transform is not None:
             self.input_transform = input_transform
 
-    def forward(self, inputs: Tensor) -> Tensor:
+    def forward(self, inputs: Tensor) -> MultivariateNormal:
         """
         Forward pass through the model.
         Side effect: stores intermediate output representations in a list.
 
         :param inputs: Input tensor.
-        :return: Output tensor after passing through the hidden layers.
+        :return: Output distribution (with mean, variance) after passing through the hidden layers.
         """
         x = inputs
         self.intermediate_outputs = []

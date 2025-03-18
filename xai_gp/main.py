@@ -3,12 +3,10 @@ from torch.utils.data import TensorDataset, DataLoader
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from models.deepgp import DeepGPModel
-from models.fitgp import fit_gp
-from xai_gp.models.deepsigma import DSPPModel
+from xai_gp.models.gp.fitgp import fit_gp
 import hydra
 from omegaconf import DictConfig
-import os
+
 
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
 def main(cfg: DictConfig):

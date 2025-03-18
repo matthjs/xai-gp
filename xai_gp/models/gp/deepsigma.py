@@ -1,13 +1,12 @@
-from typing import Any, Dict, List, Union, Tuple
-import gpytorch
+from typing import Any, Dict, List, Union
 import torch
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.likelihoods import GaussianLikelihood, SoftmaxLikelihood
 from gpytorch.models.deep_gps.dspp import DSPP
 from pandas import Categorical
 from torch import Tensor
-from xai_gp.models.deepgplayers import DSPPHiddenLayer
-from xai_gp.models.gpbase import GPytorchModel
+from xai_gp.models.gp.deepgplayers import DSPPHiddenLayer
+from xai_gp.models.gp.gpbase import GPytorchModel
 
 
 class DSPPModel(DSPP, GPytorchModel):

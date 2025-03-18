@@ -1,11 +1,8 @@
-import torch
-from torch.utils.data import TensorDataset, DataLoader
-from xai_gp.models.deepsigma import DSPPModel
-from gpytorch.likelihoods import BernoulliLikelihood  # For binary classification
+from xai_gp.models.gp.deepsigma import DSPPModel
 import torch
 from sklearn.datasets import make_moons
 from torch.utils.data import TensorDataset, DataLoader
-from xai_gp.models.fitgp import fit_gp
+from xai_gp.models.gp.fitgp import fit_gp
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
