@@ -1,0 +1,17 @@
+# Configuration for Deep Ensemble models
+
+type: "DeepEnsembleRegressor"  # Can be DeepEnsembleRegressor or DeepEnsembleClassifier
+
+# Number of models in the ensemble
+num_ensemble_models: 5
+
+# Hidden layer configuration
+hidden_layers:
+  - output_dims: 32
+    activation: "relu"
+  - output_dims: 16
+    activation: "relu"
+  - output_dims: 8
+    activation: "relu"
+
+output_dim: 1
