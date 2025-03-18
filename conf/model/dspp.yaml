@@ -3,6 +3,7 @@
 type: "DSPPModel"
 gp_mode: "DSPP"
 num_inducing_points: 100
+beta: 0.05 # Add beta parameter
 
 # Same as GP for now
 hidden_layers:

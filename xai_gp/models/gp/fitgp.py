@@ -1,6 +1,5 @@
 import torch
-from gpytorch import ExactMarginalLogLikelihood
-from gpytorch.mlls import VariationalELBO, DeepApproximateMLL
+from gpytorch.mlls import VariationalELBO, DeepApproximateMLL, ExactMarginalLogLikelihood
 from loguru import logger
 import time
 from xai_gp.models.gp.gpbase import GPytorchModel
@@ -11,7 +10,8 @@ def fit_gp(model: GPytorchModel,
            data_loader,
            num_epochs: int,
            optimizer: torch.optim.Optimizer,
-           gp_mode: str = 'DGP'
+           gp_mode: str = 'DGP',
+           beta: float = 0.05
            ):
     """
     Helper function for fitting gps to data.
@@ -24,9 +24,8 @@ def fit_gp(model: GPytorchModel,
     # Construct (marginal) log likelihood.
     if gp_mode == 'DGP':
         mll = DeepApproximateMLL(VariationalELBO(model.likelihood, model, num_samples))
-    elif gp_mode == 'DSPP':
-        # TODO: beta is a hyperparameter of DSPP
-        mll = DeepPredictiveLogLikelihood(model.likelihood, model, num_data=num_samples, beta=0.05)
+    elif gp_mode == 'DSPP': 
+        mll = DeepPredictiveLogLikelihood(model.likelihood, model, num_data=num_samples, beta=beta)
     elif gp_mode == 'SVGP':
         mll = VariationalELBO(model.likelihood, model.model, num_samples)
     else:
@@ -46,6 +45,10 @@ def fit_gp(model: GPytorchModel,
             output = model(x_batch)
 
             loss = -mll(output, y_batch)
+            
+            # Take the mean of the loss tensor 
+            # Needed for DeepGP since a batch of losses is returned
+            loss = loss.mean()
             loss.backward()
             optimizer.step()
 

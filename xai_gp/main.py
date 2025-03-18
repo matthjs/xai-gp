@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from xai_gp.models.gp.fitgp import fit_gp
+from xai_gp.models.gp import DeepGPModel, DSPPModel
 import hydra
 from omegaconf import DictConfig
 
@@ -52,7 +53,15 @@ def main(cfg: DictConfig):
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
     # Initialize model based on config
-    model_class = globals()[cfg.model.type]
+    MODEL_TYPES = {
+        "DeepGPModel": DeepGPModel,
+        "DSPPModel": DSPPModel
+    }
+    
+    model_class = MODEL_TYPES.get(cfg.model.type)
+    if model_class is None:
+        raise ValueError(f"Unknown model type: {cfg.model.type}")
+
     model = model_class(
         train_x_shape=train_x.shape,
         hidden_layers_config=cfg.model.hidden_layers,
@@ -61,14 +70,15 @@ def main(cfg: DictConfig):
 
     # Setup optimizer
     optimizer = getattr(torch.optim, cfg.training.optimizer)(
-        model.parameters(), 
+        model.parameters(),
         lr=cfg.training.learning_rate
     )
-    
+
     # Train model
     num_epochs = cfg.training.num_epochs
     print(f"Training for {num_epochs} epochs...")
-    fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=cfg.model.gp_mode)
+    beta = cfg.model.get('beta', None)  # Get beta if it exists, otherwise set to None
+    fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=cfg.model.gp_mode, beta=beta)
     
     # Evaluate on test set
     model.eval()
@@ -76,11 +86,9 @@ def main(cfg: DictConfig):
         # Check if model returns one or two outputs (mean only or mean and variance)
         mvr = model(test_x)
         mean, var = mvr.mean, mvr.variance
-        
         # Calculate error metrics
         mse = torch.mean(abs(mean - test_y)).item()
         uncertainty = torch.sqrt(var).mean().item()
-        
         print(f"\nTest Results:")
         print(f"MAE: {mse:.4f}")
         print(f"Uncertainty (variance): {uncertainty:.4f}")    
