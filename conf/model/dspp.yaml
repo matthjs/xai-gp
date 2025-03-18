@@ -4,7 +4,7 @@ type: "DSPPModel"
 gp_mode: "DSPP"
 num_inducing_points: 100
 
-# Placeholder for now 
+# Same as GP for now
 hidden_layers:
   - output_dims: 32
     mean_type: "linear"

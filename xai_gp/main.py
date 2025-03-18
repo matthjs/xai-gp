@@ -78,22 +78,12 @@ def main(cfg: DictConfig):
         mean, var = mvr.mean, mvr.variance
         
         # Calculate error metrics
-        mse = torch.mean((mean - test_y) ** 2).item()
-        rmse = torch.sqrt(torch.mean((mean - test_y) ** 2)).item()
-        
-        # Calculate R² score
-        ss_total = torch.sum((test_y - test_y.mean()) ** 2)
-        ss_residual = torch.sum((test_y - mean) ** 2)
-        r2 = 1 - (ss_residual / ss_total)
+        mse = torch.mean(abs(mean - test_y)).item()
+        uncertainty = torch.sqrt(var).mean().item()
         
         print(f"\nTest Results:")
-        print(f"MSE: {mse:.4f}")
-        print(f"RMSE: {rmse:.4f}")
-        print(f"R²: {r2.item():.4f}")
-        
-        # Print uncertainty
-        uncertainty = torch.sqrt(var).mean().item()
-        print(f"Average prediction uncertainty: {uncertainty:.4f}")
+        print(f"MAE: {mse:.4f}")
+        print(f"Uncertainty (variance): {uncertainty:.4f}")    
 
 if __name__ == "__main__":
     main()
