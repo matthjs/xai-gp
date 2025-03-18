@@ -15,14 +15,15 @@ def train_ensemble_regression(ensemble: DeepEnsembleRegressor,
                               num_epochs: int,
                               lr: float = 0.01) -> None:    # Make hyperparameters more flexible here
     optimizers = [optim.Adam(model.parameters(), lr=lr) for model in ensemble.models]
-    loss = nn.GaussianNLLLoss()
+    loss_fn = nn.GaussianNLLLoss()
 
     for epoch in range(num_epochs):
+        loss = None
         for x_batch, y_batch in train_loader:
             for model, optimizer in zip(ensemble.models, optimizers):
                 optimizer.zero_grad()
                 mean, var = model(x_batch)
-                loss = loss(mean, y_batch, var)
+                loss = loss_fn(mean, y_batch, var)
                 loss.backward()
                 optimizer.step()
         print(f"Epoch {epoch + 1}: Loss = {loss.item():.4f}")
@@ -34,15 +35,16 @@ def train_ensemble_classification(ensemble: DeepEnsembleClassifier,
                                   num_epochs: int,
                                   lr: float = 0.01) -> None:
     optimizers = [optim.Adam(model.parameters(), lr=lr) for model in ensemble.models]
-    loss = nn.CrossEntropyLoss()
+    loss_fn = nn.CrossEntropyLoss()
 
     for epoch in range(num_epochs):
+        loss = None
         for x_batch, y_batch in train_loader:
             for model, optimizer in zip(ensemble.models, optimizers):
                 optimizer.zero_grad()
                 mean, var = model(x_batch)
-                prob = sampling_softmax(mean, var)
-                loss = loss(prob, y_batch)
+                logits = MultivariateNormal(mean, torch.diag_embed(var)).rsample()
+                loss = loss_fn(logits, y_batch)
                 loss.backward()
                 optimizer.step()
         print(f"Epoch {epoch + 1}: Loss = {loss.item():.4f}")

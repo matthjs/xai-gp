@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional, Tuple
-
+import torch.nn.functional as F
 import torch
 from torch import nn
 
@@ -27,25 +27,25 @@ class TwoHeadMLP(nn.Module):
                 nn.Linear(input_dim, output_dim),
                 nn.ReLU()
             )
+        else:
+            for layer_config in hidden_layers_config:
+                output_dims = layer_config['output_dims']
+                activation = layer_config.get('activation', 'relu')  # Default to ReLU if not specified
 
-        for layer_config in hidden_layers_config:
-            output_dims = layer_config['output_dims']
-            activation = layer_config.get('activation', 'relu')  # Default to ReLU if not specified
+                layers.append(nn.Linear(prev_dim, output_dims))
 
-            layers.append(nn.Linear(prev_dim, output_dims))
+                if activation == 'relu':
+                    layers.append(nn.ReLU())
+                elif activation == 'leaky_relu':
+                    layers.append(nn.LeakyReLU())
+                elif activation == 'sigmoid':
+                    layers.append(nn.Sigmoid())
+                elif activation == 'tanh':
+                    layers.append(nn.Tanh())
+                else:
+                    raise ValueError(f"Unsupported activation function: {activation}")
 
-            if activation == 'relu':
-                layers.append(nn.ReLU())
-            elif activation == 'leaky_relu':
-                layers.append(nn.LeakyReLU())
-            elif activation == 'sigmoid':
-                layers.append(nn.Sigmoid())
-            elif activation == 'tanh':
-                layers.append(nn.Tanh())
-            else:
-                raise ValueError(f"Unsupported activation function: {activation}")
-
-            prev_dim = output_dims
+                prev_dim = output_dims
 
         # Create the sequential container for the hidden layers
         self.hidden = nn.Sequential(*layers)
@@ -61,6 +61,6 @@ class TwoHeadMLP(nn.Module):
         """
         features = self.hidden(x)
         mean = self.mean_head(features)
-        var = torch.exp(self.var_head(features))
+        var = F.softplus(self.var_head(features))
         # torch.diag_embed(torch.exp(var)) for covariance matrix
         return mean, var

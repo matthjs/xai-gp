@@ -15,7 +15,7 @@ def sampling_softmax(means: torch.Tensor, variances: torch.Tensor) -> torch.Tens
     :returns: class probabilities (torch.Tensor).
     """
     # Sample from each associated MVN.
-    samples = torch.stack([MultivariateNormal(mean, torch.diag(variance)).sample() \
+    samples = torch.stack([MultivariateNormal(mean, torch.diag_embed(variance)).rsample() \
                            for mean, variance in zip(means, variances)])
     # Sampling softmax
     prob = F.softmax(samples).mean(dim=0)  # p(y|x)

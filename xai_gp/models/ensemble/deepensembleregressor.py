@@ -29,8 +29,7 @@ class DeepEnsembleRegressor(DeepEnsemble):
         variances = torch.stack(variances)  # Shape: (M, batch, output_dim)
 
         mean_ensemble = means.mean(dim=0)
-        var_ensemble = variances + torch.matmul(means.unsqueeze(-1), means.unsqueeze(-2)).mean(dim=0) \
-            - torch.matmul(mean_ensemble.unsqueeze(-1), mean_ensemble.unsqueeze(-2))
+        var_ensemble = (variances + torch.square(means)).mean(dim=0) - mean_ensemble
 
         if disentangle_uncertainty:
             ale_var = variances.mean(dim=0)
