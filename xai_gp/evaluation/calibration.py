@@ -10,12 +10,14 @@ from itertools import tee
 
 EPSILON = 1e-5
 
-#From itertools recipes
+
+# From itertools recipes
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
 
 def validate_calibration_data(y_pred, y_true, y_confidences):
     if len(y_true.shape) > 2:
@@ -31,10 +33,11 @@ def validate_calibration_data(y_pred, y_true, y_confidences):
         y_pred = y_pred.flatten()
 
     if len(y_confidences.shape) != 2:
-        raise ValueError("y_confidences should exactly be a 2D array (samples, probs), found shape {}".format(y_confidences.shape))
+        raise ValueError(
+            "y_confidences should exactly be a 2D array (samples, probs), found shape {}".format(y_confidences.shape))
 
     return y_pred, y_true, y_confidences
-    
+
 
 def classifier_calibration_error(y_pred, y_true, y_confidences, metric="mae", num_bins=10, weighted=False):
     """
@@ -62,7 +65,7 @@ def classifier_calibration_error(y_pred, y_true, y_confidences, metric="mae", nu
             error = abs(bin_conf - bin_acc)
             weight = len(filt_confs)
 
-            errors.append(error)            
+            errors.append(error)
             weights.append(weight)
 
     errors = np.array(errors)
@@ -72,6 +75,7 @@ def classifier_calibration_error(y_pred, y_true, y_confidences, metric="mae", nu
         return sum(errors * weights)
 
     return np.mean(errors)
+
 
 def classifier_calibration_curve(y_pred, y_true, y_confidences, metric="mae", num_bins=10):
     """
@@ -104,6 +108,7 @@ def classifier_calibration_curve(y_pred, y_true, y_confidences, metric="mae", nu
 
     return curve_conf, curve_acc
 
+
 def classifier_accuracy_confidence_curve(y_pred, y_true, y_confidences, num_points=20):
     candidate_confs = np.linspace(0.0, 0.99, num=num_points)
 
@@ -122,13 +127,16 @@ def classifier_accuracy_confidence_curve(y_pred, y_true, y_confidences, num_poin
 
     return out_confidences, out_accuracy
 
+
 from scipy.stats import norm
+
 
 def confidence_interval_accuracy(y_intervals, y_true):
     interval_min, interval_max = y_intervals
     indicator = np.logical_and(y_true >= interval_min, y_true <= interval_max)
 
     return np.mean(indicator)
+
 
 def regressor_calibration_curve(y_pred, y_true, y_std, num_points=20, distribution="gaussian"):
     """
@@ -150,8 +158,10 @@ def regressor_calibration_curve(y_pred, y_true, y_std, num_points=20, distributi
 
     return np.array(curve_conf), np.array(curve_acc)
 
+
 def regressor_calibration_error(y_pred, y_true, y_std, num_points=20, distribution="gaussian", error_metric="mae"):
-    curve_conf, curve_acc = regressor_calibration_curve(y_pred, y_true, y_std, num_points=num_points, distribution=distribution)
+    curve_conf, curve_acc = regressor_calibration_curve(y_pred, y_true, y_std, num_points=num_points,
+                                                        distribution=distribution)
     errors = np.abs(curve_conf - curve_acc)
 
     if error_metric == "mae":
@@ -161,7 +171,9 @@ def regressor_calibration_error(y_pred, y_true, y_std, num_points=20, distributi
 
     raise ValueError("Invalid metric {}".format(error_metric))
 
-def regressor_error_confidence_curve(y_pred, y_true, y_std, num_points=20, distribution="gaussian", error_metric="mae", normalize_std=False):
+
+def regressor_error_confidence_curve(y_pred, y_true, y_std, num_points=20, distribution="gaussian", error_metric="mae",
+                                     normalize_std=False):
     min_conf = y_std.min()
     max_conf = y_std.max()
     candidate_confs = np.linspace(min_conf, max_conf, num=num_points)
