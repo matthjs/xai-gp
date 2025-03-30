@@ -21,3 +21,28 @@ python main.py model=model_config.yaml data=data_config.yaml
 
 - `CASP`: Protein regression dataset
 - `CIFAR100`: Image classification dataset (TBD)
+
+## Getting Started
+### Prerequisites
+*  [Poetry](https://python-poetry.org/).
+
+## Running
+
+You can also set up a virtual environment using Poetry. Poetry can  be installed using `pip`:
+```
+pip install poetry
+```
+Then initiate the virtual environment with the required dependencies (see `poetry.lock`, `pyproject.toml`):
+```
+poetry config virtualenvs.in-project true    # ensures virtual environment is in project
+poetry install
+```
+The virtual environment can be accessed from the shell using:
+```
+poetry shell
+```
+IDEs like Pycharm will be able to detect the interpreter of this virtual environment.
+
+
+# License
+This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](./LICENSE) file for details.
