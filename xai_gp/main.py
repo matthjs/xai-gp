@@ -25,6 +25,11 @@ from evaluation.calibration import (
     classifier_calibration_curve
 )
 
+from utils.boxplots import (
+    plot_aggregated_boxplot_accuracy,
+    plot_aggregated_boxplot
+)
+
 
 def prepare_data(cfg, device):
     """Load and preprocess the dataset."""
@@ -63,7 +68,7 @@ def prepare_data(cfg, device):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=cfg.training.shuffle)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    return train_loader, test_loader, train_x.shape
+    return train_loader, test_loader, train_x.shape, test_x, test_y
 
 
 def is_gp_model(model):
@@ -262,8 +267,81 @@ def train_and_evaluate(model, train_loader, test_loader, optimizer, cfg):
         plot_title = f"Calibration Curve for {cfg.model.type}"
         plot_calibration_curve(conf, acc, title=plot_title,
                                relative_save_path=f'calibration_{cfg.model.type}_{cfg.data.name}.png')
+
     else:
         pass  # Classification not implemented yet
+
+def evaluate_under_shift(model, test_x, test_y, batch_size, device, shift_type, severity):
+    """
+    Evaluate the model on shifted test data.
+    
+    Args:
+        model: The trained model.
+        test_x (torch.Tensor): Test features.
+        test_y (torch.Tensor): Test targets.
+        batch_size (int): Batch size for evaluation.
+        device: Torch device.
+        shift_type (str): The type of shift to apply ("gaussian", "mask", "scaling").
+        severity (float): Severity level of the corruption.
+    
+    Returns:
+        mae (float): Mean Absolute Error.
+        cal_error (float): Calibration error computed with regressor_calibration_error.
+        conf (np.array): Confidence levels for the calibration curve.
+        acc (np.array): Empirical coverage (accuracy) corresponding to the confidence levels.
+    """
+    # Convert test features to NumPy, apply the shift, and convert back to a tensor.
+    X_np = test_x.cpu().numpy()
+    from utils.shift import apply_shift  
+    shifted_X_np = apply_shift(X_np, shift_type, severity)
+    shifted_test_tensor = torch.FloatTensor(shifted_X_np).to(device)
+    
+    # New test dataset and loader with the shifted features.
+    shifted_test_dataset = TensorDataset(shifted_test_tensor, test_y.cpu())
+    shifted_test_loader = DataLoader(shifted_test_dataset, batch_size=batch_size)
+    
+    # Evaluate on test set
+    model.eval()
+    all_means = []
+    all_variances = []
+    all_targets = []
+
+    with torch.no_grad():
+        for batch_x, batch_y in shifted_test_loader:
+            # Forward pass and extract predictions based on model type
+            means, variances = extract_predictions(model, batch_x)
+
+            all_means.append(means)
+            all_variances.append(variances)
+            all_targets.extend(batch_y.cpu().tolist())
+
+        # Convert test targets to tensor
+        test_targets = torch.tensor(all_targets).cpu()
+
+        # Concatenate means and variances - handle dimensionality consistently
+        if is_gp_model(model):
+            test_means = torch.cat(all_means, dim=1).cpu()
+            test_variances = torch.cat(all_variances, dim=1).cpu()
+        else:
+            test_means = torch.cat(all_means, dim=0).cpu()
+            test_variances = torch.cat(all_variances, dim=0).cpu()
+
+        # Calculate error metrics
+        mse = torch.mean(abs(test_means - test_targets)).item()
+        print(f"\nTest Results:")
+        print(f"MAE: {mse:.4f}")
+
+    # Convert to numpy due to library limitations
+    test_means = test_means.numpy()
+    test_variances = test_variances.numpy()
+
+    test_stds = np.sqrt(test_variances)
+    cal_error = regressor_calibration_error(test_means, test_stds, test_targets)
+    print(f"Calibration error: {cal_error:.4f}")
+    conf, acc = regressor_calibration_curve(test_means, test_stds, test_targets)
+    
+    return mse, cal_error, conf, acc
+
 
 
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
@@ -273,11 +351,41 @@ def main(cfg: DictConfig):
     print(f"Using device: {device}")
 
     # Prepare data
-    train_loader, test_loader, input_shape = prepare_data(cfg, device)
+    train_loader, test_loader, input_shape, test_x, test_y = prepare_data(cfg, device)
 
     # Initialize model
     model, optimizer = initialize_model(cfg, input_shape, device)
     train_and_evaluate(model, train_loader, test_loader, optimizer, cfg)
+    # After the baseline training and evaluation
+    shift_types = ["gaussian", "mask", "scaling"]
+    severity_levels = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8]
+
+    # Collect results from evaluation under shift.
+    results = {}
+    for shift in shift_types:
+        results[shift] = []
+        for sev in severity_levels:
+            mae, cal_err, conf, acc = evaluate_under_shift(
+                model, test_x, test_y, cfg.training.batch_size, device, shift, sev
+            )
+            coverage_val = 1 - (mae / 100)  # Example transformation; update as needed.
+            
+            results[shift].append({
+                "severity": sev, 
+                "mae": mae, 
+                "cal_error": cal_err,
+                "coverage": coverage_val,
+            })
+            
+            # If wanted plot individual calibration curves for this shift.
+            # plot_title = f"Calibration Curve ({cfg.model.type}) - {shift} shift (severity {sev})"
+            # save_path = f'shift_analysis/calibration_{cfg.model.type}_{shift}_{sev}_{cfg.data.name}.png'
+            # plot_calibration_curve(conf, acc, title=plot_title, relative_save_path=save_path)
+            # print(f"Shift type: {shift}, Severity: {sev}, MAE: {mae:.4f}, Calibration Error: {cal_err:.4f}")
+    
+    # Create aggregated box plots for the metrics.
+    plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Calibration Error")
+    plot_aggregated_boxplot_accuracy(results, severity_levels, metric="coverage", ylabel="Empirical Coverage")
 
 
 if __name__ == "__main__":
