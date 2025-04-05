@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Callable, Tuple
+from typing import Dict, Optional, Callable, Tuple, List
 import torch
 from ax import Experiment
 from ax.service.ax_client import AxClient
@@ -10,7 +10,7 @@ from ax.service.utils.instantiation import ObjectiveProperties
 class BayesianOptimizer:
     def __init__(
             self,
-            search_space: Dict[str, Dict],
+            search_space: List[dict],
             model_factory: Callable[[Dict[str, Any]], torch.nn.Module],
             train_fn: Callable[[torch.nn.Module, Dict[str, Any]], float],
             eval_fn: Callable[[torch.nn.Module], Dict[str, float]],
@@ -42,7 +42,7 @@ class BayesianOptimizer:
         5: Augment dataset with {(x_new, f(x_new)}.
         6: Goto 1. until stopping criterion is met.
         """
-        self.ax_client = AxClient()
+        self.ax_client = AxClient(torch_device=device)
         self.device = device
         self.model_factory = model_factory
         self.train_fn = train_fn
@@ -52,21 +52,11 @@ class BayesianOptimizer:
         self.objective_name = objective_name
         self.minimize = minimize
 
-        """
-        Search space example:
-        search_space = {
-            "num_models": {"name": "num_models", "type": "range", "bounds": [3, 10]},
-            "hidden_size": {"name": "hidden_size", "type": "range", "bounds": [32, 256]},
-            "lr": {"name": "lr", "type": "range", "bounds": [1e-4, 0.1], "log_scale": True},
-            "num_epochs": {"name": "num_epochs", "type": "range", "bounds": [50, 200]}
-        }
-        """
-
         # Initialize hyperparameter tuning experiment. We want to find the optimal set of
         # hyperparameters such that an objective is minimized (or maximized)
         self.ax_client.create_experiment(
             name="bayesian_optimization",
-            parameters=list(search_space.values()),
+            parameters=search_space,
             objectives={self.objective_name: ObjectiveProperties(minimize=self.minimize)},
         )
 

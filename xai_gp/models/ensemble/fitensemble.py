@@ -14,13 +14,14 @@ from xai_gp.utils.training_utils import log_training_start, log_epoch_stats, log
 def train_ensemble_regression(ensemble: DeepEnsembleRegressor,
                               train_loader,
                               num_epochs: int,
-                              lr: float = 0.01) -> None:    # Make hyperparameters more flexible here
+                              lr: float = 0.01) -> float:    # Make hyperparameters more flexible here
     optimizers = [optim.Adam(model.parameters(), lr=lr) for model in ensemble.models]
     loss_fn = nn.GaussianNLLLoss()
     
     num_samples = len(train_loader.dataset)
     start_time = log_training_start("Ensemble Regression", num_epochs, num_samples)
 
+    total_loss = 0.0
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_start_time = time.time()
@@ -40,23 +41,27 @@ def train_ensemble_regression(ensemble: DeepEnsembleRegressor,
             epoch_loss += batch_loss
         
         # Log epoch statistics
+        avg_epoch_loss = epoch_loss / len(train_loader)
+        total_loss += avg_epoch_loss
         log_epoch_stats(epoch, num_epochs, epoch_loss, len(train_loader), epoch_start_time)
     
     # Log final training summary
     log_training_end(start_time, epoch_loss, len(train_loader))
+    return total_loss / num_epochs
 
 
 # Training function for classification
 def train_ensemble_classification(ensemble: DeepEnsembleClassifier,
                                   train_loader,
                                   num_epochs: int,
-                                  lr: float = 0.01) -> None:
+                                  lr: float = 0.01) -> float:
     optimizers = [optim.Adam(model.parameters(), lr=lr) for model in ensemble.models]
     loss_fn = nn.CrossEntropyLoss()
     
     num_samples = len(train_loader.dataset)
     start_time = log_training_start("Ensemble Classification", num_epochs, num_samples)
 
+    total_loss = 0.0
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_start_time = time.time()
@@ -77,7 +82,10 @@ def train_ensemble_classification(ensemble: DeepEnsembleClassifier,
             epoch_loss += batch_loss
         
         # Log epoch statistics
+        avg_epoch_loss = epoch_loss / len(train_loader)
+        total_loss += avg_epoch_loss
         log_epoch_stats(epoch, num_epochs, epoch_loss, len(train_loader), epoch_start_time)
     
     # Log final training summary
     log_training_end(start_time, epoch_loss, len(train_loader))
+    return total_loss / num_epochs

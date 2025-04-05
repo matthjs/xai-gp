@@ -19,7 +19,7 @@ from xai_gp.models.ensemble import (
 
 from omegaconf import DictConfig
 
-from evaluation.calibration import (
+from xai_gp.evaluation.calibration import (
     regressor_calibration_curve,
     regressor_calibration_error,
     classifier_calibration_curve

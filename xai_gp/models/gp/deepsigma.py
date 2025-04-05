@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Union
 import torch
 from gpytorch.distributions import MultivariateNormal
@@ -12,17 +13,20 @@ from xai_gp.models.gp.gpbase import GPytorchModel
 class DSPPModel(DSPP, GPytorchModel):
 
     def __init__(self,
-                 train_x_shape: torch.Size,
+                 input_dim: int,    # train_x_shape[-1]
                  hidden_layers_config: List[Dict[str, Any]],
                  Q: int = 8,
                  num_inducing_points: int = 128,
                  input_transform: Any = None,
                  outcome_transform: Any = None,
-                 classification: bool = False):
+                 classification: bool = False,
+                 **kwargs):
         super().__init__(num_quad_sites=Q)
-        input_dims = train_x_shape[-1]
+        input_dims = input_dim
         self.layers = []
         self.Q = Q
+
+        hidden_layers_config = json.loads(hidden_layers_config) if isinstance(hidden_layers_config, str) else hidden_layers_config
 
         # Build hidden layers
         for layer_config in hidden_layers_config:

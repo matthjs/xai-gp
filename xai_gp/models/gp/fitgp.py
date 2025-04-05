@@ -12,7 +12,7 @@ def fit_gp(model: GPytorchModel,
            optimizer: torch.optim.Optimizer,
            gp_mode: str = 'DGP',
            beta: float = 0.05
-           ):
+           ) -> float:
     """
     Helper function for fitting gps to data.
     Make sure gp_mode corresponds to the GP model passed!
@@ -24,7 +24,7 @@ def fit_gp(model: GPytorchModel,
     # Construct (marginal) log likelihood.
     if gp_mode == 'DGP':
         mll = DeepApproximateMLL(VariationalELBO(model.likelihood, model, num_samples))
-    elif gp_mode == 'DSPP': 
+    elif gp_mode == 'DSPP':
         mll = DeepPredictiveLogLikelihood(model.likelihood, model, num_data=num_samples, beta=beta)
     elif gp_mode == 'SVGP':
         mll = VariationalELBO(model.likelihood, model.model, num_samples)
@@ -33,6 +33,7 @@ def fit_gp(model: GPytorchModel,
 
     start_time = log_training_start(gp_mode, num_epochs, num_samples)
 
+    total_loss = 0.0
     epoch_loss = 0
     # This optimizes the hyperparameters so noise variance, inducing points etc.
     for epoch in range(num_epochs):
@@ -44,7 +45,7 @@ def fit_gp(model: GPytorchModel,
             output = model(x_batch)
 
             loss = -mll(output, y_batch)
-            
+
             # Take the mean of the loss tensor 
             # Needed for DeepGP since a batch of losses is returned
             loss = loss.mean()
@@ -53,8 +54,12 @@ def fit_gp(model: GPytorchModel,
 
             epoch_loss += loss.item()
 
+        avg_epoch_loss = epoch_loss / len(data_loader)
+        total_loss += avg_epoch_loss
         # Log epoch statistics
         log_epoch_stats(epoch, num_epochs, epoch_loss, len(data_loader), epoch_start_time)
 
     # Log final training summary
     log_training_end(start_time, epoch_loss, len(data_loader))
+
+    return total_loss / num_epochs

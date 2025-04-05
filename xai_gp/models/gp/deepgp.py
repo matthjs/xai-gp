@@ -2,6 +2,7 @@
 Based on https://github.com/pytorch/botorch/issues/1750 and
 https://docs.gpytorch.ai/en/stable/examples/05_Deep_Gaussian_Processes/Deep_Gaussian_Processes.html
 """
+import json
 from typing import Any, Dict, List, Union
 import gpytorch
 import torch
@@ -22,12 +23,13 @@ class DeepGPModel(DeepGP, GPytorchModel):
     """
 
     def __init__(self,
-                 train_x_shape: torch.Size,
+                 input_dim: int,
                  hidden_layers_config: List[Dict[str, Any]],
                  num_inducing_points: int = 128,
                  input_transform: Any = None,
                  outcome_transform: Any = None,
-                 classification: bool = False):
+                 classification: bool = False,
+                 **kwargs):
         """
         Constructor for DeepGPModel.
 
@@ -42,9 +44,10 @@ class DeepGPModel(DeepGP, GPytorchModel):
         :param outcome_transform: Transformation to be applied to the outputs. Default is None.
         """
         super().__init__()
-
-        input_dims = train_x_shape[-1]
+        input_dims = input_dim
+        # input_dim = train_x_shape[-1]
         self.layers = []
+        hidden_layers_config = json.loads(hidden_layers_config) if isinstance(hidden_layers_config, str) else hidden_layers_config
 
         # Create hidden layers based on the provided configuration
         for layer_config in hidden_layers_config:
