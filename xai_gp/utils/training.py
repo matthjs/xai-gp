@@ -102,8 +102,6 @@ def train_model(model, train_loader, optimizer, cfg):
     num_epochs = cfg.training.num_epochs
     print(f"Training for {num_epochs} epochs...")
 
-    start_time = log_training_start(cfg.model.type, num_epochs, len(train_loader.dataset))
-
     if isinstance(model, (DeepGPModel, DSPPModel)):
         beta = cfg.model.get('beta', None)
         fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=cfg.model.gp_mode, beta=beta)
@@ -114,5 +112,3 @@ def train_model(model, train_loader, optimizer, cfg):
             train_ensemble_classification(model, train_loader, num_epochs, cfg.training.learning_rate)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
-
-    log_training_end(start_time, 0, len(train_loader))  # Replace `0` with actual loss if available

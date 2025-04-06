@@ -20,7 +20,10 @@ def extract_predictions(model, batch_x):
     """Extract predictions based on model type."""
     if is_gp_model(model):
         mvr = model(batch_x)
-        return mvr.mean, mvr.variance
+        means, vars = mvr.mean, mvr.variance
+        mean = means.mean(dim=0)
+        var = (vars + torch.square(means)).mean(dim=0) - mean
+        return mean, var
     else:
         mean, variance = model(batch_x)
         return mean, variance
@@ -98,16 +101,9 @@ def evaluate_model(model, test_loader, cfg):
 
         test_targets = torch.tensor(all_targets).cpu()
 
-        if is_gp_model(model):
-            test_means = torch.cat(all_means, dim=1).cpu()
-            test_variances = torch.cat(all_variances, dim=1).cpu()
-        else:
-            test_means = torch.cat(all_means, dim=0).cpu()
-            test_variances = torch.cat(all_variances, dim=0).cpu()
-
-        mse = torch.mean(abs(test_means - test_targets)).item()
-        print(f"\nTest Results:")
-        print(f"MAE: {mse:.4f}")
+        # GPs return a list of means and variances for each point while other models return a single tensor for the whole ensemble
+        test_means = torch.cat(all_means, dim=0).cpu()
+        test_variances = torch.cat(all_variances, dim=0).cpu()
 
     test_means = test_means.numpy()
     test_variances = test_variances.numpy()
@@ -115,6 +111,9 @@ def evaluate_model(model, test_loader, cfg):
     if cfg.data.task_type == "regression":
         test_stds = np.sqrt(test_variances)
         test_targets = test_targets.numpy()
+        
+        mae = np.mean(np.abs(test_means - test_targets))
+        print(f"Mean Absolute Error: {mae:.4f}")
 
         conf, acc = regressor_calibration_curve(test_means, test_targets, test_stds)
         calibration_error = regressor_calibration_error(
@@ -122,6 +121,7 @@ def evaluate_model(model, test_loader, cfg):
             precomputed_conf=conf,
             precomputed_acc=acc
         )
+        
         print(f"Calibration error: {calibration_error:.4f}")
 
         plot_title = f"Calibration Curve for {cfg.model.type}"
