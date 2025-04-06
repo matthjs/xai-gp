@@ -12,7 +12,7 @@ from xai_gp.utils.calibration import regressor_calibration_error, regressor_cali
 from xai_gp.utils.evaluation import extract_predictions, is_gp_model
 
 
-def generic_model_factory(params: Dict[str, Any], model_type: str = 'DGP') -> nn.Module:
+def generic_model_factory(params: Dict[str, Any], model_type: str = 'DeepGP') -> nn.Module:
     """
     Factory function for models
     :param params: Dictionary of arguments passed to the constructor

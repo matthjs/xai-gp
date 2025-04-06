@@ -30,7 +30,7 @@ class DeepEnsembleClassifier(DeepEnsemble):
     """
 
     def __init__(self, model_fn: Callable, num_models: int, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.models = nn.ModuleList([model_fn() for _ in range(num_models)])
 
     def forward(self, x: torch.Tensor, disentangle_uncertainty: bool = False) -> Union[torch.Tensor, tuple]:

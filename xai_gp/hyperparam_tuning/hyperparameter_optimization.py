@@ -52,27 +52,20 @@ def create_model_instance(params: Dict[str, Any], model_type: str) -> torch.nn.M
     Returns:
         Instantiated model
     """
-    # Make a copy of params to avoid modifying the original
-    model_params = params.copy()
-    
-    # Remove training-only parameters that should not be passed to model constructors
-    for param in ['lr', 'num_epochs']:
-        if param in model_params:
-            model_params.pop(param)
     
     # Handle parameters that need conversion
-    if "hidden_layers_config" in model_params and isinstance(model_params["hidden_layers_config"], str):
-        model_params["hidden_layers_config"] = json.loads(model_params["hidden_layers_config"])
+    if "hidden_layers_config" in params and isinstance(params["hidden_layers_config"], str):
+        params["hidden_layers_config"] = json.loads(params["hidden_layers_config"])
     
     # Map parameter names to the ones expected by the models
-    if "num_inducing" in model_params and model_type in ["DGP", "DSPP"]:
-        model_params["num_inducing_points"] = model_params.pop("num_inducing_points")
+    if "num_inducing" in params and model_type in ["DGP", "DSPP"]:
+        params["num_inducing_points"] = params.pop("num_inducing_points")
     
     # For Deep Ensemble models, create a base model function
     if model_type in ["DeepEnsembleRegressor", "DeepEnsembleClassifier"]:
         # Extract parameters for the base model only
-        hidden_layers_config = model_params.pop("hidden_layers_config", None)
-        input_dim = model_params.pop("input_dim", None)
+        hidden_layers_config = params.pop("hidden_layers_config", None)
+        input_dim = params.pop("input_dim", None)
         
         # Create base model function
         base_model = lambda: TwoHeadMLP(
@@ -82,11 +75,11 @@ def create_model_instance(params: Dict[str, Any], model_type: str) -> torch.nn.M
         )
         
         # Set parameters for the ensemble model
-        model_params["model_fn"] = base_model
-        model_params["num_models"] = model_params.pop("num_ensemble_models", 5)  # Rename parameter
+        params["model_fn"] = base_model
+        params["num_models"] = params.pop("num_ensemble_models", 5)  # Rename parameter
     
     # Use the generic model factory to create the model
-    return generic_model_factory(model_params, model_type=model_type)
+    return generic_model_factory(params, model_type=model_type)
 
 
 def run_hyperparameter_optimization(

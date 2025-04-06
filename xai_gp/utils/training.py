@@ -109,12 +109,10 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None):
         gp_mode = best_params.get("gp_mode", cfg.model.gp_mode) if best_params else cfg.model.gp_mode
         loss = fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=gp_mode, beta=beta)
     else:
+        learning_rate = best_params.get("lr", cfg.training.learning_rate) if best_params else cfg.training.learning_rate
         if cfg.data.task_type == "regression":
-            # For ensemble models, get learning rate from best_params if available
-            learning_rate = best_params.get("lr", cfg.training.learning_rate) if best_params else cfg.training.learning_rate
             loss = train_ensemble_regression(model, train_loader, num_epochs, learning_rate)
         elif cfg.data.task_type == "classification":
-            learning_rate = best_params.get("lr", cfg.training.learning_rate) if best_params else cfg.training.learning_rate
             loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
