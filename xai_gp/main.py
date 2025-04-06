@@ -1,6 +1,10 @@
 from omegaconf import DictConfig
 from xai_gp.utils.training import train_model, prepare_data, initialize_model
 from xai_gp.utils.evaluation import evaluate_model, is_gp_model
+from xai_gp.hyperparam_tuning.hyperparameter_optimization import (
+    run_hyperparameter_optimization,
+    get_best_model
+)
 
 import torch
 import hydra
@@ -15,12 +19,27 @@ def main(cfg: DictConfig):
     # Prepare data
     train_loader, test_loader, input_shape = prepare_data(cfg, device)
 
-    # Initialize model
-    model, optimizer = initialize_model(cfg, input_shape, device)
-
-    # Train and evaluate model
-    train_model(model, train_loader, optimizer, cfg)
-    evaluate_model(model, test_loader, cfg)
+    # Check if hyperparameter tuning is enabled
+    if cfg.get("hyperparam_tuning", {}).get("enabled", False):
+        print("Running hyperparameter optimization...")
+        
+        # Run optimization to find best parameters
+        best_params = run_hyperparameter_optimization(
+            cfg, train_loader, test_loader, input_shape, device
+        )
+        
+        # Initialize model with best parameters
+        model, optimizer = get_best_model(best_params, cfg, device)
+        
+        # Train final model with best parameters
+        print("\nTraining final model with best parameters...")
+        train_model(model, train_loader, optimizer, cfg)
+        evaluate_model(model, test_loader, cfg)
+    else:
+        # Standard training workflow
+        model, optimizer = initialize_model(cfg, input_shape, device)
+        train_model(model, train_loader, optimizer, cfg)
+        evaluate_model(model, test_loader, cfg)
 
 
 if __name__ == "__main__":

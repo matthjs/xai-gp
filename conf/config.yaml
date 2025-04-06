@@ -10,3 +10,11 @@ defaults:
 # System settings
 device: "cuda"
 random_seed: 42
+
+# Hyperparameter tuning configuration
+hyperparam_tuning:
+  enabled: false  # Set to true to enable Bayesian optimization
+  n_trials: 2    # Number of trials to run
+  search_space_path: ???  # Path to the JSON search space file (will be filled in programmatically)
+  objective_metric: "rmse"  # The metric to optimize
+  minimize: true   # Whether to minimize or maximize the objective

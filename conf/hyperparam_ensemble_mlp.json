@@ -1,0 +1,30 @@
+[
+  {
+    "name": "num_ensemble_models",
+    "type": "range",
+    "bounds": [2, 10],
+    "value_type": "int"
+  },
+  {
+    "name": "hidden_layers_config",
+    "type": "choice",
+    "values": [
+      "[{\"output_dims\": 16, \"activation\": \"relu\"}, {\"output_dims\": 8, \"activation\": \"relu\"}]",
+      "[{\"output_dims\": 32, \"activation\": \"relu\"}, {\"output_dims\": 16, \"activation\": \"relu\"}]"
+    ],
+    "value_type": "str"
+  },
+  {
+    "name": "lr",
+    "type": "range",
+    "bounds": [1e-4, 0.1],
+    "log_scale": true,
+    "value_type": "float"
+  },
+  {
+    "name": "num_epochs",
+    "type": "range",
+    "bounds": [5, 50],
+    "value_type": "int"
+  }
+]

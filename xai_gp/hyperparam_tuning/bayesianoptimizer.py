@@ -62,19 +62,19 @@ class BayesianOptimizer:
 
     def run_trial(self, params: Dict[str, Any]) -> Dict[str, float]:
         """Execute a single optimization trial"""
-        try:
-            model = self.model_factory(params).to(self.device)
 
-            train_loss = self.train_fn(model, params)
+        model = self.model_factory(params).to(self.device)
+        train_loss = self.train_fn(model, params)
+        metrics = self.eval_fn(model)
+        metrics["train_loss"] = train_loss  # Always track training loss
+        
+        # Print successful trial metrics
+        print(f"Trial successful with metrics: RMSE={metrics.get('rmse', 'N/A'):.6f}, "
+                f"MAE={metrics.get('mae', 'N/A'):.6f}, "
+                f"R²={metrics.get('r2', 'N/A'):.6f}")
+                
+        return metrics
 
-            metrics = self.eval_fn(model)
-            metrics["train_loss"] = train_loss  # Always track training loss
-
-            return metrics
-
-        except Exception as e:
-            print(f"Trial failed with params {params}: {str(e)}")
-            return {m: float("inf") for m in self.tracking_metrics}
 
     def optimize(self, n_trials: int = 50) -> Dict[str, Any]:
         """Main optimization loop"""

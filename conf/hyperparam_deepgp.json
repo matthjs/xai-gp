@@ -1,0 +1,36 @@
+[
+  {
+    "name": "gp_mode",
+    "type": "fixed",
+    "value" : "DeepGP",
+    "value_type": "str"
+  },
+  {
+    "name": "num_inducing",
+    "type": "range",
+    "bounds": [100, 1000],
+    "value_type": "int"
+  },
+  {
+    "name": "hidden_layers_config",
+    "type": "choice",
+    "values": [
+      "[{\"output_dims\": 4, \"mean_type\": \"linear\"}, {\"output_dims\": null, \"mean_type\": \"constant\"}]",
+      "[{\"output_dims\": 8, \"mean_type\": \"linear\"}, {\"output_dims\": 4, \"mean_type\": \"linear\"}, {\"output_dims\": null, \"mean_type\": \"constant\"}]"
+    ],
+    "value_type": "str"
+  },
+  {
+    "name": "lr",
+    "type": "range",
+    "bounds": [1e-4, 0.1],
+    "log_scale": true,
+    "value_type": "float"
+  },
+  {
+    "name": "num_epochs",
+    "type": "range",
+    "bounds": [5, 50],
+    "value_type": "int"
+  }
+]

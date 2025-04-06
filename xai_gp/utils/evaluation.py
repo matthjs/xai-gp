@@ -22,7 +22,7 @@ def extract_predictions(model, batch_x):
         mvr = model.posterior(batch_x, apply_likelihood=True)
         means, vars = mvr.mean, mvr.variance
         mean = means.mean(dim=0)
-        var = vars.mean(dim=0) # (vars + torch.square(means)).mean(dim=0) - mean
+        var = vars.mean(dim=0)
         return mean, var
     else:
         mean, variance = model(batch_x)
@@ -101,7 +101,6 @@ def evaluate_model(model, test_loader, cfg):
 
         test_targets = torch.tensor(all_targets).cpu()
 
-        # GPs return a list of means and variances for each point while other models return a single tensor for the whole ensemble
         test_means = torch.cat(all_means, dim=0).cpu()
         test_variances = torch.cat(all_variances, dim=0).cpu()
 

@@ -134,8 +134,8 @@ def evaluate_model(model: nn.Module, test_loader, task_type="regression") -> Dic
         test_targets = test_targets.numpy()
 
         # Calibration metrics
-        calibration_error = regressor_calibration_error(test_means, test_stds, test_targets)
-        conf, acc = regressor_calibration_curve(test_means, test_stds, test_targets)
+        calibration_error = regressor_calibration_error(test_means, test_targets, test_stds)
+        conf, acc = regressor_calibration_curve(test_means, test_targets, test_stds)
 
         metrics.update({
             'calibration_error': calibration_error,
