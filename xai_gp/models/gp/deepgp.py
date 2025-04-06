@@ -68,10 +68,8 @@ class DeepGPModel(DeepGP, GPytorchModel):
         self.double()
         self.intermediate_outputs = None
 
-        if outcome_transform is not None:
-            self.outcome_transform = outcome_transform
-        if input_transform is not None:
-            self.input_transform = input_transform
+        self.outcome_transform = outcome_transform
+        self.input_transform = input_transform
 
     def forward(self, inputs: Tensor) -> MultivariateNormal:
         """
@@ -105,7 +103,8 @@ class DeepGPModel(DeepGP, GPytorchModel):
         """
         self.eval()  # make sure model is in eval mode
 
-        X = self.transform_inputs(X)  # Transform the inputs
+        if self.input_transform is not None:
+            X = self.input_transform(X)
 
         with torch.no_grad() and gpytorch.settings.num_likelihood_samples(10):
             dist = self(X)  # Compute the posterior distribution

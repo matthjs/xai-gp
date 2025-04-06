@@ -75,7 +75,8 @@ class DSPPModel(DSPP, GPytorchModel):
         :return: Posterior distribution.
         """
         self.eval()
-        X = self.transform_inputs(X)
+        if self.input_transform is not None:
+            X = self.input_transform(X)
 
         with torch.no_grad():
             dist = self(X, mean_input=X)

@@ -7,8 +7,9 @@ from xai_gp.models.gp import DSPPModel, DeepGPModel, fit_gp
 import numpy as np
 import torch
 from sklearn.metrics import r2_score
-from xai_gp.evaluation.calibration import regressor_calibration_error, regressor_calibration_curve
-from xai_gp.main import extract_predictions, is_gp_model
+
+from xai_gp.utils.calibration import regressor_calibration_error, regressor_calibration_curve
+from xai_gp.utils.evaluation import extract_predictions, is_gp_model
 
 
 def generic_model_factory(params: Dict[str, Any], model_type: str = 'DGP') -> nn.Module:
@@ -107,8 +108,12 @@ def evaluate_model(model: nn.Module, test_loader, task_type="regression") -> Dic
 
         # Concatenate all predictions and targets
         if is_gp_model(model):
-            test_means = torch.cat(all_means, dim=1).cpu()
-            test_variances = torch.cat(all_variances, dim=1).cpu()
+            if len(all_means[0].shape) == 1:
+                test_means = torch.cat(all_means, dim=0).cpu()
+                test_variances = torch.cat(all_variances, dim=0).cpu()
+            else:
+                test_means = torch.cat(all_means, dim=1).cpu()
+                test_variances = torch.cat(all_variances, dim=1).cpu()
         else:
             test_means = torch.cat(all_means, dim=0).cpu()
             test_variances = torch.cat(all_variances, dim=0).cpu()

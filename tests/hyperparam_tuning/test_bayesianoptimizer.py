@@ -79,11 +79,11 @@ def test_bayesian_optimizer():
 
     # 8. Validate results
     assert isinstance(best_params, dict), "Should return dictionary of best parameters"
-    required_keys = {"num_layers", "hidden_size", "num_inducing", "r", "num_epochs"}
+    required_keys = {"input_dim", "hidden_layers_config", "num_inducing", "lr", "num_epochs"}
     assert all(k in best_params for k in required_keys), "Missing required parameters"
 
     # 9. Test final model with best parameters
-    best_model = model_factory(best_params)
+    best_model = model_factory(best_params).to(device=device)
     final_metrics = eval_fn(best_model)
 
     print("\nOptimization Results:")

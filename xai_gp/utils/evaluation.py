@@ -19,10 +19,10 @@ def is_gp_model(model):
 def extract_predictions(model, batch_x):
     """Extract predictions based on model type."""
     if is_gp_model(model):
-        mvr = model(batch_x)
+        mvr = model.posterior(batch_x, apply_likelihood=True)
         means, vars = mvr.mean, mvr.variance
         mean = means.mean(dim=0)
-        var = (vars + torch.square(means)).mean(dim=0) - mean
+        var = vars.mean(dim=0) # (vars + torch.square(means)).mean(dim=0) - mean
         return mean, var
     else:
         mean, variance = model(batch_x)
