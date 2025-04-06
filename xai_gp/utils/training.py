@@ -97,19 +97,25 @@ def initialize_model(cfg, input_shape, device):
 
     return model, optimizer
 
-def train_model(model, train_loader, optimizer, cfg):
+def train_model(model, train_loader, optimizer, cfg, best_params=None):
     """Train the model."""
-    num_epochs = cfg.training.num_epochs
+    # Use hyperparameter-optimized values if provided, otherwise use config values
+    num_epochs = best_params.get("num_epochs", cfg.training.num_epochs) if best_params else cfg.training.num_epochs
     print(f"Training for {num_epochs} epochs...")
 
     if isinstance(model, (DeepGPModel, DSPPModel)):
-        beta = cfg.model.get('beta', None)
-        loss = fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=cfg.model.gp_mode, beta=beta)
+        # For GP models, use beta from best_params if available
+        beta = best_params.get("beta", cfg.model.get('beta', None)) if best_params else cfg.model.get('beta', None)
+        gp_mode = best_params.get("gp_mode", cfg.model.gp_mode) if best_params else cfg.model.gp_mode
+        loss = fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=gp_mode, beta=beta)
     else:
         if cfg.data.task_type == "regression":
-            loss = train_ensemble_regression(model, train_loader, num_epochs, cfg.training.learning_rate)
+            # For ensemble models, get learning rate from best_params if available
+            learning_rate = best_params.get("lr", cfg.training.learning_rate) if best_params else cfg.training.learning_rate
+            loss = train_ensemble_regression(model, train_loader, num_epochs, learning_rate)
         elif cfg.data.task_type == "classification":
-            loss = train_ensemble_classification(model, train_loader, num_epochs, cfg.training.learning_rate)
+            learning_rate = best_params.get("lr", cfg.training.learning_rate) if best_params else cfg.training.learning_rate
+            loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
         

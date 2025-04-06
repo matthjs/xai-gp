@@ -86,7 +86,7 @@ def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_p
         plt.savefig(save_path)
 
 
-def evaluate_model(model, test_loader, cfg):
+def evaluate_model(model, test_loader, cfg, best_params=None):
     """Evaluate the model's performance."""
     model.eval()
     all_means = []
@@ -125,9 +125,15 @@ def evaluate_model(model, test_loader, cfg):
         
         print(f"Calibration error: {calibration_error:.4f}")
 
-        plot_title = f"Calibration Curve for {cfg.model.type}"
-        plot_calibration_curve(conf, acc, title=plot_title,
-                               relative_save_path=f'calibration_{cfg.model.type}_{cfg.data.name}.png')
+        # For the plot title, include information about whether we're using optimized parameters
+        model_name = cfg.model.type
+        
+        # Only plot for optimized values
+        if best_params:
+            plot_title = f"Calibration Curve for {model_name}"
+            save_path = f'calibration_{model_name}_{cfg.data.name}.png'
+            
+            plot_calibration_curve(conf, acc, title=plot_title, relative_save_path=save_path)
         
         metrics = {
             'mae': mae,

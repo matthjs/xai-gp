@@ -33,8 +33,8 @@ def main(cfg: DictConfig):
         
         # Train final model with best parameters
         print("\nTraining final model with best parameters...")
-        train_model(model, train_loader, optimizer, cfg)
-        evaluate_model(model, test_loader, cfg)
+        train_model(model, train_loader, optimizer, cfg, best_params=best_params)
+        evaluate_model(model, test_loader, cfg, best_params=best_params)
     else:
         # Standard training workflow
         model, optimizer = initialize_model(cfg, input_shape, device)
