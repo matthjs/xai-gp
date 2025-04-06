@@ -127,3 +127,11 @@ def evaluate_model(model, test_loader, cfg):
         plot_title = f"Calibration Curve for {cfg.model.type}"
         plot_calibration_curve(conf, acc, title=plot_title,
                                relative_save_path=f'calibration_{cfg.model.type}_{cfg.data.name}.png')
+        
+        metrics = {
+            'mae': mae,
+            'calibration_error': calibration_error,
+            'sharpness': np.mean(test_stds ** 2),  # Average variance
+        }
+        
+    return metrics

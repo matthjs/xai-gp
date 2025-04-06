@@ -104,11 +104,13 @@ def train_model(model, train_loader, optimizer, cfg):
 
     if isinstance(model, (DeepGPModel, DSPPModel)):
         beta = cfg.model.get('beta', None)
-        fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=cfg.model.gp_mode, beta=beta)
+        loss = fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=cfg.model.gp_mode, beta=beta)
     else:
         if cfg.data.task_type == "regression":
-            train_ensemble_regression(model, train_loader, num_epochs, cfg.training.learning_rate)
+            loss = train_ensemble_regression(model, train_loader, num_epochs, cfg.training.learning_rate)
         elif cfg.data.task_type == "classification":
-            train_ensemble_classification(model, train_loader, num_epochs, cfg.training.learning_rate)
+            loss = train_ensemble_classification(model, train_loader, num_epochs, cfg.training.learning_rate)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
+        
+    return loss
