@@ -3,7 +3,7 @@ from gpytorch.mlls import VariationalELBO, DeepApproximateMLL, ExactMarginalLogL
 import time
 from xai_gp.models.gp.gpbase import GPytorchModel
 from gpytorch.mlls import DeepPredictiveLogLikelihood
-from xai_gp.utils.training_utils import log_training_start, log_epoch_stats, log_training_end
+from xai_gp.utils.logging import log_training_start, log_epoch_stats, log_training_end
 
 
 def fit_gp(model: GPytorchModel,

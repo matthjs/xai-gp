@@ -1,7 +1,6 @@
 from loguru import logger
 import time
 
-
 def log_training_start(model_type, num_epochs, num_samples):
     """Log the start of a training process."""
     logger.info(f"Training {model_type} model for {num_epochs} epochs on {num_samples} samples...")
