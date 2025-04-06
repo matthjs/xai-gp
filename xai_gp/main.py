@@ -86,22 +86,19 @@ def initialize_model(cfg, input_shape, device):
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 
     # Check if the model is a GP model using is_gp_model function
+    input_dim = input_shape[1]
+    
     if is_gp_model(model_class):
         model = model_class(
-            train_x_shape=input_shape,
+            input_dim=input_dim,
             hidden_layers_config=cfg.model.hidden_layers,
             num_inducing_points=cfg.model.num_inducing_points,
         ).to(device)
     else:
-
-        # For ensemble models, initialize with TwoHeadMLP as the base model
-        input_dim = input_shape[1]
-        output_dim = cfg.model.output_dim
-
         # Create a base model using TwoHeadMLP
         base_model = lambda: TwoHeadMLP(
             input_dim=input_dim,
-            output_dim=output_dim,
+            output_dim=cfg.model.output_dim,
             hidden_layers_config=cfg.model.hidden_layers
         )
 
@@ -248,17 +245,22 @@ def train_and_evaluate(model, train_loader, test_loader, optimizer, cfg):
     if cfg.data.task_type == "regression":
         # Calculate standard deviations from variances
         test_stds = np.sqrt(test_variances)
+        test_targets = test_targets.numpy()
 
-        # Calculate calibration error
-        calibration_error = regressor_calibration_error(test_means, test_stds, test_targets)
-        print(f"Calibration error: {calibration_error:.4f}")
-
-        # Get calibration curve data
+        # Get calibration curve data only once
         # conf represents confidence levels (alphas)
         # acc represents empirical coverage probabilities
-        conf, acc = regressor_calibration_curve(test_means, test_stds, test_targets)
+        conf, acc = regressor_calibration_curve(test_means, test_targets, test_stds)
 
-        # Plot the calibration curve
+        # Calculate calibration error using pre-computed curve data
+        calibration_error = regressor_calibration_error(
+            error_metric="mae",
+            precomputed_conf=conf,
+            precomputed_acc=acc
+        )
+        print(f"Calibration error: {calibration_error:.4f}")
+
+        # Plot the calibration curve using the already computed data
         plot_title = f"Calibration Curve for {cfg.model.type}"
         plot_calibration_curve(conf, acc, title=plot_title,
                                relative_save_path=f'calibration_{cfg.model.type}_{cfg.data.name}.png')

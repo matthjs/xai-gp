@@ -140,17 +140,17 @@ def confidence_interval_accuracy(y_intervals, y_true):
 
 def regressor_calibration_curve(y_pred, y_true, y_std, num_points=20, distribution="gaussian"):
     """
-        Computes the reliability plot for a regression prediction.
-        :param y_pred: model predictions, usually the mean of the predicted distribution.
-        :param y_std: model predicted confidence, usually the standard deviation of the predicted distribution.
-        :param y_true: ground truth labels.
+    Computes the reliability plot for a regression prediction.
     """
     alphas = np.linspace(0.0 + EPSILON, 1.0 - EPSILON, num_points + 1)
     curve_conf = []
     curve_acc = []
 
     for alpha in alphas:
-        alpha_intervals = norm.interval(alpha, y_pred, y_std)
+        # Create a copy and ensure standard deviations are positive
+        y_std_safe = np.maximum(y_std, EPSILON)
+        
+        alpha_intervals = norm.interval(alpha, y_pred, y_std_safe)
         acc = confidence_interval_accuracy(alpha_intervals, y_true)
 
         curve_conf.append(alpha)
@@ -159,8 +159,28 @@ def regressor_calibration_curve(y_pred, y_true, y_std, num_points=20, distributi
     return np.array(curve_conf), np.array(curve_acc)
 
 
-def regressor_calibration_error(y_pred, y_true, y_std, num_points=20, distribution="gaussian", error_metric="mae"):
-    curve_conf, curve_acc = regressor_calibration_curve(y_pred, y_true, y_std, num_points=num_points,
+def regressor_calibration_error(y_pred=None, y_true=None, y_std=None, num_points=20, distribution="gaussian", error_metric="mae", 
+                                precomputed_conf=None, precomputed_acc=None):
+    """
+    Calculate calibration error for regression predictions.
+    
+    Args:
+        y_pred, y_true, y_std: Prediction data (not needed if precomputed values are provided)
+        num_points: Number of points for calibration curve (not needed if precomputed values are provided)
+        distribution: Distribution type (default: "gaussian")
+        error_metric: Error metric to use ("mae" or "max")
+        precomputed_conf: Precomputed confidence values from calibration curve
+        precomputed_acc: Precomputed accuracy values from calibration curve
+    
+    Returns:
+        Calibration error value
+    """
+    if precomputed_conf is not None and precomputed_acc is not None:
+        curve_conf, curve_acc = precomputed_conf, precomputed_acc
+    else:
+        if y_pred is None or y_true is None or y_std is None:
+            raise ValueError("Either prediction data or precomputed values must be provided")
+        curve_conf, curve_acc = regressor_calibration_curve(y_pred, y_true, y_std, num_points=num_points,
                                                         distribution=distribution)
     errors = np.abs(curve_conf - curve_acc)
 
