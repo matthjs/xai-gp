@@ -22,15 +22,16 @@ def generic_model_factory(params: Dict[str, Any], model_type: str = 'DGP') -> nn
     partial(create_gp(gp_mode='DGP')) for a DGP factory function.
     partial(create_gp(gp_mode='DSPP')) for a DSPP factory function.
     """
-    if model_type == 'DSPP':
+    if model_type == 'DSPPModel':
         return DSPPModel(**params)
-    elif model_type == 'DGP':
+    elif model_type == 'DeepGPModel':
         return DeepGPModel(**params)
     elif model_type == 'DeepEnsembleRegressor':
         return DeepEnsembleRegressor(**params)
     elif model_type == 'DeepEnsembleClassifier':
         return DeepEnsembleClassifier(**params)
 
+    print("model_type", model_type)
     raise ValueError('Invalid gp_mode')
 
 

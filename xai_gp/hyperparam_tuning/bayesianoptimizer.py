@@ -68,10 +68,10 @@ class BayesianOptimizer:
         metrics = self.eval_fn(model)
         metrics["train_loss"] = train_loss  # Always track training loss
         
-        # Print successful trial metrics
-        print(f"Trial successful with metrics: RMSE={metrics.get('rmse', 'N/A'):.6f}, "
-                f"MAE={metrics.get('mae', 'N/A'):.6f}, "
-                f"R²={metrics.get('r2', 'N/A'):.6f}")
+        # Loop and print all metrics
+        for metric_name, metric_value in metrics.items():
+            print(f"{metric_name}: {metric_value}")
+        print("---")
                 
         return metrics
 

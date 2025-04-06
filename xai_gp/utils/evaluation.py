@@ -13,7 +13,8 @@ def is_gp_model(model):
     """Check if the model/class is a GP."""
     is_instance = isinstance(model, (DeepGPModel, DSPPModel))
     is_class = model in (DeepGPModel, DSPPModel)
-    return is_instance or is_class
+    is_string = model in ("DeepGPModel", "DSPPModel")
+    return is_instance or is_class or is_string
 
 
 def extract_predictions(model, batch_x):
@@ -112,7 +113,8 @@ def evaluate_model(model, test_loader, cfg):
         test_targets = test_targets.numpy()
         
         mae = np.mean(np.abs(test_means - test_targets))
-        print(f"Mean Absolute Error: {mae:.4f}")
+        mse = np.mean((test_means - test_targets) ** 2)
+        rmse = np.sqrt(mse)
 
         conf, acc = regressor_calibration_curve(test_means, test_targets, test_stds)
         calibration_error = regressor_calibration_error(
@@ -129,6 +131,8 @@ def evaluate_model(model, test_loader, cfg):
         
         metrics = {
             'mae': mae,
+            'mse': mse,
+            'rmse': rmse,
             'calibration_error': calibration_error,
             'sharpness': np.mean(test_stds ** 2),  # Average variance
         }

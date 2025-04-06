@@ -1,14 +1,8 @@
 [
   {
-    "name": "gp_mode",
-    "type": "fixed",
-    "value" : "DeepGP",
-    "value_type": "str"
-  },
-  {
-    "name": "num_inducing",
+    "name": "num_inducing_points",
     "type": "range",
-    "bounds": [100, 1000],
+    "bounds": [8, 100],
     "value_type": "int"
   },
   {

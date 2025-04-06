@@ -11,10 +11,10 @@ from torch.utils.data import DataLoader
 from xai_gp.hyperparam_tuning.bayesianoptimizer import BayesianOptimizer
 from xai_gp.hyperparam_tuning.wrappers import (
     generic_model_factory, train_gp, train_ensemble, 
-    evaluate_model, print_metrics
 )
 from xai_gp.utils.evaluation import is_gp_model
 from xai_gp.models.ensemble import TwoHeadMLP
+from xai_gp.utils.evaluation import evaluate_model
 
 
 def load_search_space(search_space_path: str, input_dim: int) -> list:
@@ -66,7 +66,7 @@ def create_model_instance(params: Dict[str, Any], model_type: str) -> torch.nn.M
     
     # Map parameter names to the ones expected by the models
     if "num_inducing" in model_params and model_type in ["DGP", "DSPP"]:
-        model_params["num_inducing_points"] = model_params.pop("num_inducing")
+        model_params["num_inducing_points"] = model_params.pop("num_inducing_points")
     
     # For Deep Ensemble models, create a base model function
     if model_type in ["DeepEnsembleRegressor", "DeepEnsembleClassifier"]:
@@ -124,15 +124,6 @@ def run_hyperparameter_optimization(
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     
-    # Check if search_space_path is provided in config and is valid
-    try:
-        config_path = OmegaConf.select(cfg, "hyperparam_tuning.search_space_path")
-        if config_path and config_path != "???":
-            search_space_path = config_path
-    except Exception:
-        # If there's any error accessing the path, use the default
-        pass
-    
     print(f"Using search space configuration from: {search_space_path}")
     
     # Load search space and add input dimension
@@ -143,14 +134,14 @@ def run_hyperparameter_optimization(
     
     # Create training function
     if is_gp_model(model_type):
-        gp_mode = "DSPP" if model_type == "DSPPModel" else "DeepGP"
+        gp_mode = cfg.model.gp_mode
         train_fn = partial(train_gp, data_loader=train_loader, gp_mode=gp_mode)
     else:
         task_type = cfg.data.task_type
         train_fn = partial(train_ensemble, data_loader=train_loader, task_type=task_type)
     
     # Create evaluation function
-    eval_fn = partial(evaluate_model, test_loader=test_loader, task_type=cfg.data.task_type)
+    eval_fn = partial(evaluate_model, test_loader=test_loader, cfg=cfg)
     
     # Create and run optimizer
     optimizer = BayesianOptimizer(
