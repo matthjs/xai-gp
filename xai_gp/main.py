@@ -8,6 +8,7 @@ from xai_gp.hyperparam_tuning.hyperparameter_optimization import (
 
 import torch
 import hydra
+from xai_gp.utils.shift_analysis import run_shift_analysis
 
 
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
@@ -40,6 +41,8 @@ def main(cfg: DictConfig):
         model, optimizer = initialize_model(cfg, input_shape, device)
         train_model(model, train_loader, optimizer, cfg)
         evaluate_model(model, test_loader, cfg)
+    
+    run_shift_analysis(model, test_loader, cfg, device)
 
 
 if __name__ == "__main__":
