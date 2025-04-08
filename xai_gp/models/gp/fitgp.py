@@ -22,7 +22,7 @@ def fit_gp(model: GPytorchModel,
     num_samples = len(data_loader.dataset)
 
     # Construct (marginal) log likelihood.
-    if gp_mode == 'DGP':
+    if gp_mode == 'DeepGP':
         mll = DeepApproximateMLL(VariationalELBO(model.likelihood, model, num_samples))
     elif gp_mode == 'DSPP':
         mll = DeepPredictiveLogLikelihood(model.likelihood, model, num_data=num_samples, beta=beta)
