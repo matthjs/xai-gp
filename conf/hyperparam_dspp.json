@@ -2,7 +2,7 @@
   {
     "name": "num_inducing_points",
     "type": "range",
-    "bounds": [8, 100],
+    "bounds": [1, 500],
     "value_type": "int"
   },
   {

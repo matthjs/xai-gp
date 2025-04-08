@@ -56,39 +56,36 @@ def prepare_data(cfg, device):
         # Load dataset
         data = pd.read_csv(dataset_path)
 
-        # Split into features and target
-        X = data.iloc[:, cfg.data.feature_cols].values
-        y = data.iloc[:, cfg.data.target_col].values
+    # Further split training data into training and validation sets
+    val_size = cfg.data.test_size  # Use the same test_size for validation
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train, y_train, test_size=val_size, random_state=cfg.random_seed
+    )
 
-        # Standardize features
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
+    # Convert to PyTorch tensors
+    train_x = torch.FloatTensor(X_train).to(device)
+    train_y = torch.FloatTensor(y_train).to(device)
+    val_x = torch.FloatTensor(X_val).to(device)
+    val_y = torch.FloatTensor(y_val).to(device)
+    test_x = torch.FloatTensor(X_test).to(device)
+    test_y = torch.FloatTensor(y_test).to(device)
 
-        # Split into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_scaled, y, test_size=cfg.data.test_size, random_state=cfg.random_seed
-        )
+    # Print dataset information
+    print(f"Input features: {train_x.shape[1]}")
+    print(f"Training samples: {train_x.shape[0]}")
+    print(f"Validation samples: {val_x.shape[0]}")
+    print(f"Test samples: {test_x.shape[0]}")
 
-        # Convert to PyTorch tensors
-        train_x = torch.FloatTensor(X_train).to(device)
-        train_y = torch.FloatTensor(y_train).to(device)
-        test_x = torch.FloatTensor(X_test).to(device)
-        test_y = torch.FloatTensor(y_test).to(device)
+    # Create data loaders
+    batch_size = cfg.training.batch_size
+    train_dataset = TensorDataset(train_x, train_y)
+    val_dataset = TensorDataset(val_x, val_y)
+    test_dataset = TensorDataset(test_x, test_y)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=cfg.training.shuffle)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-        # Print dataset information
-        print(f"Input features: {train_x.shape[1]}")
-        print(f"Training samples: {train_x.shape[0]}")
-        print(f"Test samples: {test_x.shape[0]}")
-
-        # Create data loaders
-        batch_size = cfg.training.batch_size
-        train_dataset = TensorDataset(train_x, train_y)
-        test_dataset = TensorDataset(test_x, test_y)
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=cfg.training.shuffle)
-        test_loader = DataLoader(test_dataset, batch_size=batch_size)
-
-        return train_loader, test_loader, train_x.shape[1:]
-
+    return train_loader, val_loader, test_loader, train_x.shape
 
 
 def initialize_model(cfg, input_shape, device):

@@ -18,7 +18,7 @@ def main(cfg: DictConfig):
     print(f"Using device: {device}")
 
     # Prepare data
-    train_loader, test_loader, input_shape = prepare_data(cfg, device)
+    train_loader, val_loader, test_loader, input_shape = prepare_data(cfg, device)
 
     # Check if hyperparameter tuning is enabled
     if cfg.get("hyperparam_tuning", {}).get("enabled", False):
