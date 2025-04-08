@@ -1,0 +1,14 @@
+# Main configuration file
+
+# Default configuration groups
+defaults:
+  - data: casp
+  - training: ablation
+  - _self_  # For overriding with command line arguments
+
+# System settings
+device: "cuda"
+random_seed: 42
+
+# Hyperparameter tuning configuration
+experiment: "ablation_inducing" # or "ablation_layers"

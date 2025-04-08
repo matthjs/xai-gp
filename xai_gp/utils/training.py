@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import torch
 
+
 def prepare_data(cfg, device):
     """Load and preprocess the dataset."""
     # Load dataset
@@ -54,6 +55,7 @@ def prepare_data(cfg, device):
 
     return train_loader, test_loader, train_x.shape
 
+
 def initialize_model(cfg, input_shape, device):
     """Initialize the model based on configuration."""
     MODEL_TYPES = {
@@ -68,7 +70,7 @@ def initialize_model(cfg, input_shape, device):
 
     # Check if the model is a GP model using is_gp_model function
     input_dim = input_shape[1]
-    
+
     if is_gp_model(model_class):
         model = model_class(
             input_dim=input_dim,
@@ -97,6 +99,7 @@ def initialize_model(cfg, input_shape, device):
 
     return model, optimizer
 
+
 def train_model(model, train_loader, optimizer, cfg, best_params=None):
     """Train the model."""
     # Use hyperparameter-optimized values if provided, otherwise use config values
@@ -116,5 +119,5 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None):
             loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
-        
+
     return loss
