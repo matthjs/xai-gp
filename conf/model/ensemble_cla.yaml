@@ -1,0 +1,13 @@
+
+type: "DeepEnsembleClassifier"
+
+num_ensemble_models: 5
+
+hidden_layers:
+  - output_dims: 32
+    activation: "relu"
+  - output_dims: 16
+    activation: "relu"
+  - output_dims: 8
+    activation: "relu"
+output_dim: 100  # Because CIFAR-100 has 100 classes
