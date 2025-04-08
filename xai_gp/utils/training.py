@@ -5,7 +5,8 @@ from xai_gp.utils.logging import log_training_start, log_training_end
 from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.models.ensemble import (
     DeepEnsembleRegressor,
-    TwoHeadMLP
+    TwoHeadMLP,
+    DeepEnsembleClassifier
 )
 from xai_gp.utils.evaluation import is_gp_model
 
@@ -14,12 +15,57 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import torch
+from torchvision.datasets import CIFAR100
+from torchvision import transforms
+from torch.utils.data import random_split
+
+
+
 
 
 def prepare_data(cfg, device):
-    """Load and preprocess the dataset."""
-    # Load dataset
     dataset_path = cfg.data.path
+    if cfg.data.name.lower() == "cifar100":
+        print("dataset_path", dataset_path)
+        # Define image transforms including normalization.
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5071, 0.4867, 0.4408],
+                                 std=[0.2675, 0.2565, 0.2761]),
+            transforms.Lambda(lambda x: x.view(-1))
+        ])
+
+        # Load CIFAR-100 using torchvision.
+        full_train_dataset = CIFAR100(root=cfg.data.path, train=True, download=True, transform=transform)
+        test_dataset = CIFAR100(root=cfg.data.path, train=False, download=True, transform=transform)
+
+        # Split the training dataset into training and validation sets
+        val_size = int(len(full_train_dataset) * cfg.data.test_size)
+        train_size = len(full_train_dataset) - val_size
+        train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
+
+        # Helper function to move data to the GPU
+        def collate_fn(batch):
+            data, target = zip(*batch)
+            data = torch.stack(data).to(device)
+            target = torch.tensor(target).to(device)
+            return data, target
+
+        # Create data loaders with the custom collate function
+        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle, collate_fn=collate_fn)
+        val_loader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
+        test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
+
+        # For CIFAR-100, the input shape is (3, 32, 32).
+        input_shape = (3, 32, 32)
+        
+        print("CIFAR-100 dataset loaded.")
+        print(f"Training samples: {len(train_dataset)}")
+        print(f"Validation samples: {len(val_dataset)}")
+        print(f"Test samples: {len(test_dataset)}")
+        
+        return train_loader, val_loader, test_loader, input_shape
+    
     data = pd.read_csv(dataset_path)
 
     # Split into features and target
@@ -35,25 +81,37 @@ def prepare_data(cfg, device):
         X_scaled, y, test_size=cfg.data.test_size, random_state=cfg.random_seed
     )
 
+    # Further split training data into training and validation sets
+    val_size = cfg.data.test_size  # Use the same test_size for validation
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train, y_train, test_size=val_size, random_state=cfg.random_seed
+    )
+
     # Convert to PyTorch tensors
     train_x = torch.FloatTensor(X_train).to(device)
     train_y = torch.FloatTensor(y_train).to(device)
+    val_x = torch.FloatTensor(X_val).to(device)
+    val_y = torch.FloatTensor(y_val).to(device)
     test_x = torch.FloatTensor(X_test).to(device)
     test_y = torch.FloatTensor(y_test).to(device)
 
     # Print dataset information
     print(f"Input features: {train_x.shape[1]}")
     print(f"Training samples: {train_x.shape[0]}")
+    print(f"Validation samples: {val_x.shape[0]}")
     print(f"Test samples: {test_x.shape[0]}")
 
     # Create data loaders
     batch_size = cfg.training.batch_size
     train_dataset = TensorDataset(train_x, train_y)
+    val_dataset = TensorDataset(val_x, val_y)
     test_dataset = TensorDataset(test_x, test_y)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=cfg.training.shuffle)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    return train_loader, test_loader, train_x.shape
+    return train_loader, val_loader, test_loader, train_x.shape
+
 
 
 def initialize_model(cfg, input_shape, device):
@@ -61,21 +119,27 @@ def initialize_model(cfg, input_shape, device):
     MODEL_TYPES = {
         "DeepGPModel": DeepGPModel,
         "DSPPModel": DSPPModel,
-        "DeepEnsembleRegressor": DeepEnsembleRegressor
+        "DeepEnsembleRegressor": DeepEnsembleRegressor,
+        "DeepEnsembleClassifier": DeepEnsembleClassifier, 
     }
 
     model_class = MODEL_TYPES.get(cfg.model.type)
     if (model_class is None):
         raise ValueError(f"Unknown model type: {cfg.model.type}")
-
+    
     # Check if the model is a GP model using is_gp_model function
-    input_dim = input_shape[1]
-
+    if cfg.data.task_type == "classification":
+        input_dim = int(torch.tensor(input_shape).prod().item())
+    else:
+        input_dim = input_shape[1]
+    
     if is_gp_model(model_class):
+        is_classification = cfg.data.task_type == "classification"
         model = model_class(
             input_dim=input_dim,
             hidden_layers_config=cfg.model.hidden_layers,
             num_inducing_points=cfg.model.num_inducing_points,
+            classification=is_classification,
         ).to(device)
     else:
         # Create a base model using TwoHeadMLP

@@ -1,0 +1,5 @@
+
+path: "data"
+name: "CIFAR100"
+test_size: 0.2
+task_type: "classification"

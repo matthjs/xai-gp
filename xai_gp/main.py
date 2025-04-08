@@ -18,7 +18,7 @@ def main(cfg: DictConfig):
     print(f"Using device: {device}")
 
     # Prepare data
-    train_loader, test_loader, input_shape = prepare_data(cfg, device)
+    train_loader, val_loader, test_loader, input_shape = prepare_data(cfg, device)
 
     # Check if hyperparameter tuning is enabled
     if cfg.get("hyperparam_tuning", {}).get("enabled", False):
@@ -40,7 +40,9 @@ def main(cfg: DictConfig):
         # Standard training workflow
         model, optimizer = initialize_model(cfg, input_shape, device)
         train_model(model, train_loader, optimizer, cfg)
-        evaluate_model(model, test_loader, cfg, plotting=True)
+        evaluate_model(model, test_loader, cfg)
+    
+    # run_shift_analysis(model, test_loader, cfg, device)
 
 
 if __name__ == "__main__":
