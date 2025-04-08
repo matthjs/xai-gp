@@ -42,7 +42,7 @@ class DSPPModel(DSPP, GPytorchModel):
 
         self.out_dim = input_dims
         self.layers = torch.nn.ModuleList(self.layers)
-        self.likelihood = SoftmaxLikelihood(num_classes=self.out_dim, num_features=self.out_dim) if classification else GaussianLikelihood()
+        self.likelihood = SoftmaxLikelihood(num_classes=100, num_features=8) if classification else GaussianLikelihood()
         self._num_outputs = 1
         self.double()
         self.intermediate_outputs = None

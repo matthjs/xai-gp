@@ -43,7 +43,7 @@ def fit_gp(model: GPytorchModel,
         for batch_idx, (x_batch, y_batch) in enumerate(data_loader):
             optimizer.zero_grad()
             output = model(x_batch)
-
+            
             loss = -mll(output, y_batch)
 
             # Take the mean of the loss tensor 
