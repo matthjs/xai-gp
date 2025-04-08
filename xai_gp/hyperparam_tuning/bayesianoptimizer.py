@@ -67,14 +67,13 @@ class BayesianOptimizer:
         train_loss = self.train_fn(model, params)
         metrics = self.eval_fn(model)
         metrics["train_loss"] = train_loss  # Always track training loss
-        
+
         # Loop and print all metrics
         for metric_name, metric_value in metrics.items():
             print(f"{metric_name}: {metric_value}")
         print("---")
-                
-        return metrics
 
+        return metrics
 
     def optimize(self, n_trials: int = 50) -> Dict[str, Any]:
         """Main optimization loop"""

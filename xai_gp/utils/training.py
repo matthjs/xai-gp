@@ -21,6 +21,7 @@ from torchvision import transforms
 
 
 
+
 def prepare_data(cfg, device):
     dataset_path = cfg.data.path
     if cfg.data.name.lower() == "cifar100":
@@ -89,6 +90,7 @@ def prepare_data(cfg, device):
         return train_loader, test_loader, train_x.shape[1:]
 
 
+
 def initialize_model(cfg, input_shape, device):
     """Initialize the model based on configuration."""
     MODEL_TYPES = {
@@ -133,6 +135,7 @@ def initialize_model(cfg, input_shape, device):
 
     return model, optimizer
 
+
 def train_model(model, train_loader, optimizer, cfg, best_params=None):
     """Train the model."""
     # Use hyperparameter-optimized values if provided, otherwise use config values
@@ -152,5 +155,5 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None):
             loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
-        
+
     return loss
