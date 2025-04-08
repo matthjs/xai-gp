@@ -40,7 +40,7 @@ def main(cfg: DictConfig):
         # Standard training workflow
         model, optimizer = initialize_model(cfg, input_shape, device)
         train_model(model, train_loader, optimizer, cfg)
-        evaluate_model(model, test_loader, cfg)
+        evaluate_model(model, test_loader, cfg, plotting=True)
     
     # run_shift_analysis(model, test_loader, cfg, device)
 
