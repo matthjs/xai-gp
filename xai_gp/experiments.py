@@ -73,8 +73,8 @@ def ablation_layers(cfg) -> None:
     print(f"Using device: {device}")
     train_loader, test_loader, input_shape = prepare_data(cfg, device)
 
-    num_inducing = cfg.experiment.ablation.num_inducing
-    depth_levels = cfg.experiment.ablation.depth_levels
+    num_inducing = 128
+    depth_levels = [1, 2, 4, 8]
 
     constructors = [DeepGPModel, DSPPModel]
     model_names = ["DGP", "DSPP"]
@@ -126,7 +126,7 @@ def main(cfg: DictConfig) -> None:
     if cfg.experiment == 'ablation_inducing':
         ablation_inducing(cfg)
     elif cfg.experiment == 'ablation_layers':
-        ablation_inducing(cfg)
+        ablation_layers(cfg)
     else:
         raise ValueError(f"No valid experiment type")
 
