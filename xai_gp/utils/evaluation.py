@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from sklearn.metrics import f1_score
+
 from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.utils.calibration import (
     regressor_calibration_curve,
@@ -91,6 +93,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     model.eval()
     all_means = []
     all_variances = []
+    all_preds = []  # TODO: Needs to be implemented to handle classification case
     all_targets = []
 
     with torch.no_grad():
@@ -116,6 +119,12 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
         mse = np.mean((test_means - test_targets) ** 2)
         rmse = np.sqrt(mse)
 
+        # Negative Log-Likelihood for Gaussian likelihood.
+        # For simplicity I am adding it here but can be defined as a function
+        nll = np.mean(
+            0.5 * np.log(2 * np.pi * test_variances) + ((test_targets - test_means) ** 2) / (2 * test_variances)
+        )
+
         conf, acc = regressor_calibration_curve(test_means, test_targets, test_stds)
         calibration_error = regressor_calibration_error(
             error_metric="mae",
@@ -138,8 +147,12 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
             'mae': mae,
             'mse': mse,
             'rmse': rmse,
+            'nll': nll,
             'calibration_error': calibration_error,
             'sharpness': np.mean(test_stds ** 2),  # Average variance
         }
+    elif cfg.data.task_type == "classification":
+        # TODO: ECE, Brier score, NLL using categorical likelihood.,
+        raise NotImplementedError('Not implemented yet')
         
     return metrics
