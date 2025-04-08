@@ -1,6 +1,6 @@
 from omegaconf import DictConfig
 from xai_gp.utils.training import train_model, prepare_data, initialize_model
-from xai_gp.utils.evaluation import evaluate_model, is_gp_model
+from xai_gp.utils.evaluation import evaluate_model
 from xai_gp.hyperparam_tuning.hyperparameter_optimization import (
     run_hyperparameter_optimization,
     get_best_model
@@ -8,6 +8,7 @@ from xai_gp.hyperparam_tuning.hyperparameter_optimization import (
 
 import torch
 import hydra
+from xai_gp.utils.shift_analysis import run_shift_analysis
 
 
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
