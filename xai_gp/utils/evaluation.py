@@ -104,7 +104,10 @@ def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_p
 
 def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     """Evaluate the model's performance."""
-    model.eval()
+    
+    # For some reason, the ensemble tends to break during inference in evaluation mode
+    if cfg.model.type != "DeepEnsembleClassifier":
+        model.eval()
     
     if cfg.data.task_type == "classification":
         all_probs = []
