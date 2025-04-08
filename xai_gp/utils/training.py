@@ -5,7 +5,8 @@ from xai_gp.utils.logging import log_training_start, log_training_end
 from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.models.ensemble import (
     DeepEnsembleRegressor,
-    TwoHeadMLP
+    TwoHeadMLP,
+    DeepEnsembleClassifier
 )
 from xai_gp.utils.evaluation import is_gp_model
 
@@ -14,52 +15,87 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import torch
+from torchvision.datasets import CIFAR100
+from torchvision import transforms
+
+
+
 
 def prepare_data(cfg, device):
-    """Load and preprocess the dataset."""
-    # Load dataset
     dataset_path = cfg.data.path
-    data = pd.read_csv(dataset_path)
+    if cfg.data.name.lower() == "cifar100":
+        print("dataset_path", dataset_path)
+        # Define image transforms including normalization.
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5071, 0.4867, 0.4408],
+                                 std=[0.2675, 0.2565, 0.2761]),
+            transforms.Lambda(lambda x: x.view(-1))
+        ])
 
-    # Split into features and target
-    X = data.iloc[:, cfg.data.feature_cols].values
-    y = data.iloc[:, cfg.data.target_col].values
+        # Load CIFAR-100 using torchvision.
+        train_dataset = CIFAR100(root=cfg.data.path, train=True, download=False, transform=transform)
+        test_dataset = CIFAR100(root=cfg.data.path, train=False, download=False, transform=transform)
 
-    # Standardize features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+        # Create data loaders.
+        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle)
+        test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size)
 
-    # Split into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=cfg.data.test_size, random_state=cfg.random_seed
-    )
+        # For CIFAR-100, the input shape is (3, 32, 32).
+        input_shape = (3, 32, 32)
+        
+        print("CIFAR-100 dataset loaded.")
+        print(f"Training samples: {len(train_dataset)}")
+        print(f"Test samples: {len(test_dataset)}")
+        
+        return train_loader, test_loader, input_shape
+    
+    else:
+        """Load and preprocess the dataset."""
+        # Load dataset
+        data = pd.read_csv(dataset_path)
 
-    # Convert to PyTorch tensors
-    train_x = torch.FloatTensor(X_train).to(device)
-    train_y = torch.FloatTensor(y_train).to(device)
-    test_x = torch.FloatTensor(X_test).to(device)
-    test_y = torch.FloatTensor(y_test).to(device)
+        # Split into features and target
+        X = data.iloc[:, cfg.data.feature_cols].values
+        y = data.iloc[:, cfg.data.target_col].values
 
-    # Print dataset information
-    print(f"Input features: {train_x.shape[1]}")
-    print(f"Training samples: {train_x.shape[0]}")
-    print(f"Test samples: {test_x.shape[0]}")
+        # Standardize features
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
 
-    # Create data loaders
-    batch_size = cfg.training.batch_size
-    train_dataset = TensorDataset(train_x, train_y)
-    test_dataset = TensorDataset(test_x, test_y)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=cfg.training.shuffle)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size)
+        # Split into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, y, test_size=cfg.data.test_size, random_state=cfg.random_seed
+        )
 
-    return train_loader, test_loader, train_x.shape
+        # Convert to PyTorch tensors
+        train_x = torch.FloatTensor(X_train).to(device)
+        train_y = torch.FloatTensor(y_train).to(device)
+        test_x = torch.FloatTensor(X_test).to(device)
+        test_y = torch.FloatTensor(y_test).to(device)
+
+        # Print dataset information
+        print(f"Input features: {train_x.shape[1]}")
+        print(f"Training samples: {train_x.shape[0]}")
+        print(f"Test samples: {test_x.shape[0]}")
+
+        # Create data loaders
+        batch_size = cfg.training.batch_size
+        train_dataset = TensorDataset(train_x, train_y)
+        test_dataset = TensorDataset(test_x, test_y)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=cfg.training.shuffle)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+        return train_loader, test_loader, train_x.shape[1:]
+
 
 def initialize_model(cfg, input_shape, device):
     """Initialize the model based on configuration."""
     MODEL_TYPES = {
         "DeepGPModel": DeepGPModel,
         "DSPPModel": DSPPModel,
-        "DeepEnsembleRegressor": DeepEnsembleRegressor
+        "DeepEnsembleRegressor": DeepEnsembleRegressor,
+        "DeepEnsembleClassifier": DeepEnsembleClassifier, 
     }
 
     model_class = MODEL_TYPES.get(cfg.model.type)
@@ -67,7 +103,7 @@ def initialize_model(cfg, input_shape, device):
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 
     # Check if the model is a GP model using is_gp_model function
-    input_dim = input_shape[1]
+    input_dim = int(torch.tensor(input_shape).prod().item())
     
     if is_gp_model(model_class):
         model = model_class(

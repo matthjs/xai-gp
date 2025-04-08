@@ -42,7 +42,7 @@ def main(cfg: DictConfig):
         train_model(model, train_loader, optimizer, cfg)
         evaluate_model(model, test_loader, cfg)
     
-    run_shift_analysis(model, test_loader, cfg, device)
+    # run_shift_analysis(model, test_loader, cfg, device)
 
 
 if __name__ == "__main__":

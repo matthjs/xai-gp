@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -8,6 +9,8 @@ from xai_gp.utils.calibration import (
     regressor_calibration_error
 )
 
+from sklearn.metrics import confusion_matrix
+from sklearn.calibration import calibration_curve
 
 def is_gp_model(model):
     """Check if the model/class is a GP."""
@@ -28,7 +31,7 @@ def extract_predictions(model, batch_x):
     else:
         mean, variance = model(batch_x)
         return mean, variance
-
+    
 
 def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_path='calibration_curve.png'):
     """
@@ -89,26 +92,64 @@ def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_p
 def evaluate_model(model, test_loader, cfg, best_params=None):
     """Evaluate the model's performance."""
     model.eval()
-    all_means = []
-    all_variances = []
-    all_targets = []
+    
+    if cfg.data.task_type == "classification":
+        all_probs = []
+        all_targets = []
+        with torch.no_grad():
+            for batch_x, batch_y in test_loader:
+                prob = model(batch_x)  # This should now be a tensor of shape (batch_size, num_classes)
+                all_probs.append(prob)
+                all_targets.append(batch_y)
+        
+        test_probs = torch.cat(all_probs, dim=0)
+        test_targets = torch.cat(all_targets, dim=0)
+        
+        # Calculate predicted class labels
+        predicted = torch.argmax(test_probs, dim=1)
+        accuracy = (predicted == test_targets).float().mean().item()
+        
+        # Compute Negative Log-Likelihood
+        log_probs = torch.log(test_probs + 1e-10)
+        nll = F.nll_loss(log_probs, test_targets)
+        
+        # Compute Brier Score: one-hot encode targets and compute squared difference.
+        num_classes = test_probs.size(1)
+        one_hot_targets = F.one_hot(test_targets, num_classes=num_classes).float()
+        brier_score = torch.mean((test_probs - one_hot_targets) ** 2).item()
+        
+        print(f"Classification Accuracy: {accuracy:.4f}")
+        print(f"NLL Loss: {nll.item():.4f}")
+        print(f"Brier Score: {brier_score:.4f}")
+        
+        metrics = {
+            'accuracy': accuracy,
+            'nll': nll.item(),
+            'brier_score': brier_score
+        }
+        
+        return metrics
+    
+    else:
+        all_means = []
+        all_variances = []
+        all_targets = []
 
-    with torch.no_grad():
-        for batch_x, batch_y in test_loader:
-            means, variances = extract_predictions(model, batch_x)
-            all_means.append(means)
-            all_variances.append(variances)
-            all_targets.extend(batch_y.cpu().tolist())
+        with torch.no_grad():
+            for batch_x, batch_y in test_loader:
+                means, variances = extract_predictions(model, batch_x)
+                all_means.append(means)
+                all_variances.append(variances)
+                all_targets.extend(batch_y.cpu().tolist())
 
-        test_targets = torch.tensor(all_targets).cpu()
+            test_targets = torch.tensor(all_targets).cpu()
 
-        test_means = torch.cat(all_means, dim=0).cpu()
-        test_variances = torch.cat(all_variances, dim=0).cpu()
+            test_means = torch.cat(all_means, dim=0).cpu()
+            test_variances = torch.cat(all_variances, dim=0).cpu()
 
-    test_means = test_means.numpy()
-    test_variances = test_variances.numpy()
+        test_means = test_means.numpy()
+        test_variances = test_variances.numpy()
 
-    if cfg.data.task_type == "regression":
         test_stds = np.sqrt(test_variances)
         test_targets = test_targets.numpy()
         
@@ -142,5 +183,5 @@ def evaluate_model(model, test_loader, cfg, best_params=None):
             'calibration_error': calibration_error,
             'sharpness': np.mean(test_stds ** 2),  # Average variance
         }
-        
-    return metrics
+
+        return metrics

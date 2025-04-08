@@ -71,7 +71,8 @@ def train_ensemble_classification(ensemble: DeepEnsembleClassifier,
             for model, optimizer in zip(ensemble.models, optimizers):
                 optimizer.zero_grad()
                 mean, var = model(x_batch)
-                logits = MultivariateNormal(mean, torch.diag_embed(var)).rsample()
+                jitter = 1e-6
+                logits = MultivariateNormal(mean, torch.diag_embed(var + jitter)).rsample()
                 loss = loss_fn(logits, y_batch)
                 loss.backward()
                 optimizer.step()
