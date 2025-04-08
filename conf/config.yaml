@@ -15,5 +15,4 @@ random_seed: 42
 hyperparam_tuning:
   enabled: false  # Set to true to enable Bayesian optimization
   n_trials: 30    # Number of trials to run
-  objective_metric: "mae"  # The metric to optimize (do we optimize for calibration or error?)
   minimize: true   # Whether to minimize or maximize the objective

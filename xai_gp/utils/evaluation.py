@@ -22,17 +22,28 @@ def is_gp_model(model):
     return is_instance or is_class or is_string
 
 
-def extract_predictions(model, batch_x):
+def extract_predictions(model, batch_x, is_classification=False):
     """Extract predictions based on model type."""
-    if is_gp_model(model):
-        mvr = model.posterior(batch_x, apply_likelihood=True)
-        means, vars = mvr.mean, mvr.variance
-        mean = means.mean(dim=0)
-        var = vars.mean(dim=0)
-        return mean, var
+    
+    if is_classification:
+        if is_gp_model(model):
+            latent_dist = model(batch_x)  # Latent function values
+            pred_dist = model.likelihood(latent_dist)  # Class probabilities
+            probs = pred_dist.probs.mean(dim=0)
+            return probs, None
+        else:
+            probs = model(batch_x)
+            return probs, None
     else:
-        mean, variance = model(batch_x)
-        return mean, variance
+        if is_gp_model(model):
+            mvr = model.posterior(batch_x, apply_likelihood=True)
+            means, vars = mvr.mean, mvr.variance
+            mean = means.mean(dim=0)
+            var = vars.mean(dim=0)
+            return mean, var
+        else:
+            mean, variance = model(batch_x)
+            return mean, variance
     
 
 def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_path='calibration_curve.png'):
@@ -100,7 +111,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
         all_targets = []
         with torch.no_grad():
             for batch_x, batch_y in test_loader:
-                prob = model(batch_x)  # This should now be a tensor of shape (batch_size, num_classes)
+                prob, _ = extract_predictions(model, batch_x, is_classification=True)  # This should now be a tensor of shape (batch_size, num_classes)
                 all_probs.append(prob)
                 all_targets.append(batch_y)
         

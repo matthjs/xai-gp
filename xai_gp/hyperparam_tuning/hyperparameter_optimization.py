@@ -41,7 +41,7 @@ def load_search_space(search_space_path: str, input_dim: int) -> list:
     return search_space
 
 
-def create_model_instance(params: Dict[str, Any], model_type: str) -> torch.nn.Module:
+def create_model_instance(params: Dict[str, Any], model_type: str, cfg) -> torch.nn.Module:
     """
     Create a model instance based on parameters and model type.
     
@@ -60,6 +60,7 @@ def create_model_instance(params: Dict[str, Any], model_type: str) -> torch.nn.M
     # Map parameter names to the ones expected by the models
     if "num_inducing" in params and model_type in ["DGP", "DSPP"]:
         params["num_inducing_points"] = params.pop("num_inducing_points")
+        params["classification"] = cfg.data.task_type == "classification"
     
     # For Deep Ensemble models, create a base model function
     if model_type in ["DeepEnsembleRegressor", "DeepEnsembleClassifier"]:
@@ -123,7 +124,7 @@ def run_hyperparameter_optimization(
     search_space = load_search_space(search_space_path, input_shape[1])
     
     # Create model factory function
-    model_factory = partial(create_model_instance, model_type=model_type)
+    model_factory = partial(create_model_instance, model_type=model_type, cfg=cfg)
     
     # Create training function
     if is_gp_model(model_type):
@@ -136,6 +137,8 @@ def run_hyperparameter_optimization(
     # Create evaluation function
     eval_fn = partial(evaluate_model, test_loader=test_loader, cfg=cfg)
     
+    objective = 'mae' if cfg.data.task_type == 'regression' else 'accuracy'
+    
     # Create and run optimizer
     optimizer = BayesianOptimizer(
         search_space=search_space,
@@ -143,7 +146,7 @@ def run_hyperparameter_optimization(
         train_fn=train_fn,
         eval_fn=eval_fn,
         device=device,
-        objective_name=cfg.hyperparam_tuning.objective_metric,
+        objective_name=objective,
         minimize=cfg.hyperparam_tuning.minimize
     )
     
@@ -171,7 +174,7 @@ def get_best_model(best_params: Dict[str, Any], cfg: DictConfig, device: torch.d
         Tuple of (model, optimizer)
     """
     model_type = cfg.model.type
-    model = create_model_instance(best_params, model_type).to(device)
+    model = create_model_instance(best_params, model_type, cfg).to(device)
     
     # Create optimizer
     optimizer = getattr(torch.optim, cfg.training.optimizer)(
