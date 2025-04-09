@@ -57,7 +57,7 @@ def prepare_data(cfg, device):
         # For CIFAR-10, the input shape is (3, 32, 32).
         input_shape = (3, 32, 32)
 
-        print("CIFAR-100 dataset loaded.")
+        print("CIFAR-10 dataset loaded.")
         print(f"Training samples: {len(train_dataset)}")
         print(f"Validation samples: {len(val_dataset)}")
         print(f"Test samples: {len(test_dataset)}")
