@@ -2,7 +2,7 @@
   {
     "name": "num_ensemble_models",
     "type": "range",
-    "bounds": [1, 10],
+    "bounds": [2, 10],
     "value_type": "int"
   },
   {

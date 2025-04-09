@@ -190,7 +190,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
 
         # Negative Log-Likelihood for Gaussian likelihood.
         # For simplicity I am adding it here but can be defined as a function
-        nll = -np.mean(
+        nll = np.mean(
             0.5 * np.log(2 * np.pi * test_variances) + ((test_targets - test_means) ** 2) / (2 * test_variances)
         )
 
