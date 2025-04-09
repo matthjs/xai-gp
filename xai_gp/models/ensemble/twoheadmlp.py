@@ -53,6 +53,11 @@ class TwoHeadMLP(nn.Module):
         # Two separate output heads
         self.mean_head = nn.Linear(prev_dim, output_dim)  # mean vector
         self.var_head = nn.Linear(prev_dim, output_dim)  # log(stdev) diagonal entries
+        
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                # Xavier/Glorot initialization
+                nn.init.xavier_uniform_(module.weight)
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """

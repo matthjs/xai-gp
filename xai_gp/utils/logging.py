@@ -20,7 +20,7 @@ def log_epoch_stats(epoch, num_epochs, epoch_loss, data_loader_length, epoch_sta
     )
     # Log in train
     if wandb.run is not None:
-        wandb.log({f'{type}/loss': avg_epoch_loss})
+        wandb.log({f'{type}/loss': avg_epoch_loss}, step=epoch + 1)
     return avg_epoch_loss
 
 
