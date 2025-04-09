@@ -14,5 +14,4 @@ random_seed: 42
 # Hyperparameter tuning configuration
 hyperparam_tuning:
   enabled: false  # Set to true to enable Bayesian optimization
-  n_trials: 30    # Number of trials to run
-  minimize: true   # Whether to minimize or maximize the objective
+  n_trials: 20    # Number of trials to run

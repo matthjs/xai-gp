@@ -10,21 +10,23 @@
     "type": "choice",
     "values": [
       "[{\"output_dims\": 16, \"activation\": \"relu\"}, {\"output_dims\": 8, \"activation\": \"relu\"}]",
-      "[{\"output_dims\": 32, \"activation\": \"relu\"}, {\"output_dims\": 16, \"activation\": \"relu\"}]"
+      "[{\"output_dims\": 32, \"activation\": \"relu\"}, {\"output_dims\": 16, \"activation\": \"relu\"}]",
+      "[{\"output_dims\": 64, \"activation\": \"relu\"}, {\"output_dims\": 32, \"activation\": \"relu\"}]",
+      "[{\"output_dims\": 128, \"activation\": \"relu\"}, {\"output_dims\": 64, \"activation\": \"relu\"}]"
     ],
     "value_type": "str"
   },
   {
     "name": "lr",
     "type": "range",
-    "bounds": [1e-4, 0.1],
+    "bounds": [1e-5, 1e-2],
     "log_scale": true,
     "value_type": "float"
   },
   {
     "name": "num_epochs",
-    "type": "range",
-    "bounds": [5, 50],
+    "type": "fixed",
+    "value": 20,
     "value_type": "int"
   }
 ]
