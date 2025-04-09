@@ -21,11 +21,12 @@ def main(cfg: DictConfig):
     # Prepare data
     train_loader, val_loader, test_loader, input_shape = prepare_data(cfg, device)
     
-    tuning_mode = "optimized" if cfg.get('hyperparam_tuning', {}).get('enabled', False) else 'standard'
+    is_tuning = cfg.get("hyperparam_tuning", {}).get("enabled", False)
+    tuning_mode = "optimized" if is_tuning else 'standard'
     wandb_name = f"{cfg.model.type}_{cfg.data.name}_{tuning_mode}"
 
     # Check if hyperparameter tuning is enabled
-    if cfg.get("hyperparam_tuning", {}).get("enabled", False):
+    if is_tuning:
         print("Running hyperparameter optimization...")
         
         # Run optimization to find best parameters
