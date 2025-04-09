@@ -53,7 +53,7 @@ def classifier_calibration_error(y_pred, y_true, y_confidences, metric="mae", nu
     weights = []
 
     for start, end in pairwise(bin_edges):
-        indices = np.where(np.logical_and(y_confidences >= start, y_confidences < end))
+        indices = np.where(np.logical_and(y_confidences >= start, y_confidences < end))[0]
         filt_preds = y_pred[indices]
         filt_classes = y_true[indices]
         filt_confs = y_confidences[indices]
@@ -90,7 +90,7 @@ def classifier_calibration_curve(y_pred, y_true, y_confidences, metric="mae", nu
     curve_acc = []
 
     for start, end in pairwise(bin_edges):
-        indices = np.where(np.logical_and(y_confidences >= start, y_confidences < end))
+        indices = np.where(np.logical_and(y_confidences >= start, y_confidences < end))[0]  # Extract first element of tuple
         filt_preds = y_pred[indices]
         filt_classes = y_true[indices]
         filt_confs = y_confidences[indices]

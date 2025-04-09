@@ -1,5 +1,5 @@
 
 path: "data"
-name: "CIFAR100"
+name: "CIFAR10"
 test_size: 0.2
 task_type: "classification"

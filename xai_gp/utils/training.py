@@ -15,17 +15,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import torch
-from torchvision.datasets import CIFAR100
+from torchvision.datasets import CIFAR100, CIFAR10
 from torchvision import transforms
 from torch.utils.data import random_split
 
-
-
+# Helper function to move data to the GPU
+def collate_fn(batch, device='cuda'):
+    data, target = zip(*batch)
+    data = torch.stack(data).to(device)
+    target = torch.tensor(target).to(device)
+    return data, target
 
 
 def prepare_data(cfg, device):
     dataset_path = cfg.data.path
-    if cfg.data.name.lower() == "cifar100":
+    if cfg.data.name.lower() == "cifar10":
         print("dataset_path", dataset_path)
         # Define image transforms including normalization.
         transform = transforms.Compose([
@@ -35,37 +39,31 @@ def prepare_data(cfg, device):
             transforms.Lambda(lambda x: x.view(-1))
         ])
 
-        # Load CIFAR-100 using torchvision.
-        full_train_dataset = CIFAR100(root=cfg.data.path, train=True, download=True, transform=transform)
-        test_dataset = CIFAR100(root=cfg.data.path, train=False, download=True, transform=transform)
+        # Load CIFAR-10 using torchvision.
+        full_train_dataset = CIFAR10(root=cfg.data.path, train=True, download=True, transform=transform)
+        test_dataset = CIFAR10(root=cfg.data.path, train=False, download=True, transform=transform)
 
         # Split the training dataset into training and validation sets
         val_size = int(len(full_train_dataset) * cfg.data.test_size)
         train_size = len(full_train_dataset) - val_size
         train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
 
-        # Helper function to move data to the GPU
-        def collate_fn(batch):
-            data, target = zip(*batch)
-            data = torch.stack(data).to(device)
-            target = torch.tensor(target).to(device)
-            return data, target
-
         # Create data loaders with the custom collate function
-        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle, collate_fn=collate_fn)
+        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle,
+                                  collate_fn=collate_fn)
         val_loader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
         test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
 
-        # For CIFAR-100, the input shape is (3, 32, 32).
+        # For CIFAR-10, the input shape is (3, 32, 32).
         input_shape = (3, 32, 32)
-        
-        print("CIFAR-100 dataset loaded.")
+
+        print("CIFAR-10 dataset loaded.")
         print(f"Training samples: {len(train_dataset)}")
         print(f"Validation samples: {len(val_dataset)}")
         print(f"Test samples: {len(test_dataset)}")
-        
+
         return train_loader, val_loader, test_loader, input_shape
-    
+
     data = pd.read_csv(dataset_path)
 
     # Split into features and target
@@ -113,26 +111,25 @@ def prepare_data(cfg, device):
     return train_loader, val_loader, test_loader, train_x.shape
 
 
-
 def initialize_model(cfg, input_shape, device):
     """Initialize the model based on configuration."""
     MODEL_TYPES = {
         "DeepGPModel": DeepGPModel,
         "DSPPModel": DSPPModel,
         "DeepEnsembleRegressor": DeepEnsembleRegressor,
-        "DeepEnsembleClassifier": DeepEnsembleClassifier, 
+        "DeepEnsembleClassifier": DeepEnsembleClassifier,
     }
 
     model_class = MODEL_TYPES.get(cfg.model.type)
     if (model_class is None):
         raise ValueError(f"Unknown model type: {cfg.model.type}")
-    
+
     # Check if the model is a GP model using is_gp_model function
     if cfg.data.task_type == "classification":
         input_dim = int(torch.tensor(input_shape).prod().item())
     else:
         input_dim = input_shape[1]
-    
+
     if is_gp_model(model_class):
         is_classification = cfg.data.task_type == "classification"
         model = model_class(
@@ -164,7 +161,7 @@ def initialize_model(cfg, input_shape, device):
     return model, optimizer
 
 
-def train_model(model, train_loader, optimizer, cfg, best_params=None):
+def train_model(model, train_loader, optimizer, cfg, best_params=None, val_loader=None):
     """Train the model."""
     # Use hyperparameter-optimized values if provided, otherwise use config values
     num_epochs = best_params.get("num_epochs", cfg.training.num_epochs) if best_params else cfg.training.num_epochs
@@ -174,13 +171,13 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None):
         # For GP models, use beta from best_params if available
         beta = best_params.get("beta", cfg.model.get('beta', None)) if best_params else cfg.model.get('beta', None)
         gp_mode = best_params.get("gp_mode", cfg.model.gp_mode) if best_params else cfg.model.gp_mode
-        loss = fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=gp_mode, beta=beta)
+        loss = fit_gp(model, train_loader, num_epochs, optimizer, gp_mode=gp_mode, beta=beta, val_loader=val_loader)
     else:
         learning_rate = best_params.get("lr", cfg.training.learning_rate) if best_params else cfg.training.learning_rate
         if cfg.data.task_type == "regression":
-            loss = train_ensemble_regression(model, train_loader, num_epochs, learning_rate)
+            loss = train_ensemble_regression(model, train_loader, num_epochs, learning_rate, val_loader=val_loader)
         elif cfg.data.task_type == "classification":
-            loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate)
+            loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate, val_loader=val_loader)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
 
