@@ -3,16 +3,16 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import wandb
 from sklearn.metrics import f1_score
 
 from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.utils.calibration import (
     regressor_calibration_curve,
-    regressor_calibration_error
+    regressor_calibration_error,
+    classifier_calibration_curve,
+    classifier_calibration_error,
 )
-
-from sklearn.metrics import confusion_matrix
-from sklearn.calibration import calibration_curve
 
 def is_gp_model(model):
     """Check if the model/class is a GP."""
@@ -100,14 +100,12 @@ def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_p
 
         print(f"Saving calibration curve plot to: {save_path}")
         plt.savefig(save_path)
+        
+        wandb.log({"calibration_curve": wandb.Image(save_path)})
 
 
 def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     """Evaluate the model's performance."""
-    
-    # For some reason, the ensemble tends to break during inference in evaluation mode
-    if cfg.model.type != "DeepEnsembleClassifier":
-        model.eval()
     
     if cfg.data.task_type == "classification":
         all_probs = []
@@ -134,6 +132,14 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
         one_hot_targets = F.one_hot(test_targets, num_classes=num_classes).float()
         brier_score = torch.mean((test_probs - one_hot_targets) ** 2).item()
         
+        # Send to CPU for calibration curve
+        test_probs = test_probs.cpu().numpy()
+        test_targets = test_targets.cpu().numpy()
+        predicted = predicted.cpu().numpy()
+        
+        conf, acc = classifier_calibration_curve(predicted, test_targets, test_probs)
+        error = classifier_calibration_error(predicted, test_targets, test_probs)
+        
         print(f"Classification Accuracy: {accuracy:.4f}")
         print(f"NLL Loss: {nll.item():.4f}")
         print(f"Brier Score: {brier_score:.4f}")
@@ -141,8 +147,17 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
         metrics = {
             'accuracy': accuracy,
             'nll': nll.item(),
-            'brier_score': brier_score
+            'brier_score': brier_score,
+            'calibration_error': error,
         }
+        
+        if best_params or plotting:
+            # For the plot title, include information about whether we're using optimized parameters
+            model_name = cfg.model.type
+            plot_title = f"Calibration Curve for {model_name}"
+            save_path = f'calibration_{model_name}_{cfg.data.name}.png'
+            
+            plot_calibration_curve(conf, acc, title=plot_title, relative_save_path=save_path)
         
         return metrics
     
