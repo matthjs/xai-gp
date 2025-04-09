@@ -15,17 +15,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import torch
-from torchvision.datasets import CIFAR100
+from torchvision.datasets import CIFAR100, CIFAR10
 from torchvision import transforms
 from torch.utils.data import random_split
 
 
-
-
-
 def prepare_data(cfg, device):
     dataset_path = cfg.data.path
-    if cfg.data.name.lower() == "cifar100":
+    if cfg.data.name.lower() == "cifar10":
         print("dataset_path", dataset_path)
         # Define image transforms including normalization.
         transform = transforms.Compose([
@@ -35,9 +32,9 @@ def prepare_data(cfg, device):
             transforms.Lambda(lambda x: x.view(-1))
         ])
 
-        # Load CIFAR-100 using torchvision.
-        full_train_dataset = CIFAR100(root=cfg.data.path, train=True, download=True, transform=transform)
-        test_dataset = CIFAR100(root=cfg.data.path, train=False, download=True, transform=transform)
+        # Load CIFAR-10 using torchvision.
+        full_train_dataset = CIFAR10(root=cfg.data.path, train=True, download=True, transform=transform)
+        test_dataset = CIFAR10(root=cfg.data.path, train=False, download=True, transform=transform)
 
         # Split the training dataset into training and validation sets
         val_size = int(len(full_train_dataset) * cfg.data.test_size)
@@ -52,20 +49,21 @@ def prepare_data(cfg, device):
             return data, target
 
         # Create data loaders with the custom collate function
-        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle, collate_fn=collate_fn)
+        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle,
+                                  collate_fn=collate_fn)
         val_loader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
         test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
 
-        # For CIFAR-100, the input shape is (3, 32, 32).
+        # For CIFAR-10, the input shape is (3, 32, 32).
         input_shape = (3, 32, 32)
-        
+
         print("CIFAR-100 dataset loaded.")
         print(f"Training samples: {len(train_dataset)}")
         print(f"Validation samples: {len(val_dataset)}")
         print(f"Test samples: {len(test_dataset)}")
-        
+
         return train_loader, val_loader, test_loader, input_shape
-    
+
     data = pd.read_csv(dataset_path)
 
     # Split into features and target
@@ -113,26 +111,25 @@ def prepare_data(cfg, device):
     return train_loader, val_loader, test_loader, train_x.shape
 
 
-
 def initialize_model(cfg, input_shape, device):
     """Initialize the model based on configuration."""
     MODEL_TYPES = {
         "DeepGPModel": DeepGPModel,
         "DSPPModel": DSPPModel,
         "DeepEnsembleRegressor": DeepEnsembleRegressor,
-        "DeepEnsembleClassifier": DeepEnsembleClassifier, 
+        "DeepEnsembleClassifier": DeepEnsembleClassifier,
     }
 
     model_class = MODEL_TYPES.get(cfg.model.type)
     if (model_class is None):
         raise ValueError(f"Unknown model type: {cfg.model.type}")
-    
+
     # Check if the model is a GP model using is_gp_model function
     if cfg.data.task_type == "classification":
         input_dim = int(torch.tensor(input_shape).prod().item())
     else:
         input_dim = input_shape[1]
-    
+
     if is_gp_model(model_class):
         is_classification = cfg.data.task_type == "classification"
         model = model_class(
