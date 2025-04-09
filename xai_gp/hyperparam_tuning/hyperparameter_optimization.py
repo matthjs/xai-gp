@@ -138,7 +138,7 @@ def run_hyperparameter_optimization(
     eval_fn = partial(evaluate_model, test_loader=test_loader, cfg=cfg)
     
     objective = 'nll' if cfg.data.task_type == 'regression' else 'accuracy'
-    minimize = True if objective == 'mae' else False
+    minimize = True if objective in ['mae', 'nll', 'mse', 'calibration_error'] else False
     
     # Create and run optimizer
     optimizer = BayesianOptimizer(
@@ -156,6 +156,7 @@ def run_hyperparameter_optimization(
     
     # Add objective to best parameters
     best_params["objective"] = objective
+    best_params["is_minimize"] = minimize
     
     # Print and return best parameters
     print("\nBest parameters found:")
