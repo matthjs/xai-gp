@@ -38,10 +38,11 @@ if __name__ == "__main__":
 
     # Initialize DSPP model for classification
     model = DSPPModel(
-        train_x_shape=train_x.shape,  # Shape of input data (1000, 3)
+        input_dim=train_x.shape[-1],  # Shape of input data (1000, 3)
         hidden_layers_config=hidden_layers_config,
         num_inducing_points=128,  # Inducing points per layer
-        classification=True
+        classification=True,
+        num_classes=2
     ).to(device)
 
     # Optimizer
