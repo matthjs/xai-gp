@@ -1,0 +1,5 @@
+
+path: "data/ESR.csv"
+name: "ESR"   # Epileptic Seizure Recognition
+test_size: 0.2
+task_type: "classification"

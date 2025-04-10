@@ -1,4 +1,6 @@
 from PIL import Image
+from sklearn.datasets import make_moons
+
 from xai_gp.models.gp import fit_gp
 from xai_gp.models.ensemble import train_ensemble_regression, train_ensemble_classification
 from xai_gp.models.gp import DeepGPModel, DSPPModel
@@ -30,8 +32,52 @@ def collate_fn(batch, device='cuda'):
 
 def prepare_data(cfg, device):
     dataset_path = cfg.data.path
-    if cfg.data.name.lower() == "cifar10":
+    if cfg.data.name.lower() == "esr":
+        # TODO: Double check this
         print("dataset_path", dataset_path)
+        # Load the dataset
+        df = pd.read_csv(dataset_path)
+
+        # Drop the 'Unnamed' column if it exists
+        if 'Unnamed' in df.columns:
+            df = df.drop(columns=['Unnamed'])
+
+        # Separate features and labels
+        X = df.drop(columns=['y']).values
+        y = df['y'].values
+
+        # Adjust labels: convert label 1 to 1 (seizure), and labels 2-5 to 0 (non-seizure)
+        y = (y == 1).astype(int)
+
+        # Standardize features
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+        # Convert to PyTorch tensors
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y, dtype=torch.long)
+
+        # Create a TensorDataset
+        dataset = TensorDataset(X_tensor, y_tensor)
+
+        # Define split sizes
+        total_size = len(dataset)
+        train_size = int((cfg.data.test_size * 2) * total_size)
+        val_size = int(cfg.data.test_size * total_size)
+        test_size = total_size - train_size - val_size
+
+        # Split the dataset
+        train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
+
+        # Create DataLoaders
+        batch_size = 64
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+        input_shape = (178,)   # Hardcoded ajdust this
+
+        """
         # Define image transforms including normalization.
         transform = transforms.Compose([
             transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
@@ -62,6 +108,7 @@ def prepare_data(cfg, device):
         print(f"Training samples: {len(train_dataset)}")
         print(f"Validation samples: {len(val_dataset)}")
         print(f"Test samples: {len(test_dataset)}")
+        """
 
         return train_loader, val_loader, test_loader, input_shape
 

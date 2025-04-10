@@ -20,7 +20,7 @@ class DSPPModel(DSPP, GPytorchModel):
                  input_transform: Any = None,
                  outcome_transform: Any = None,
                  classification: bool = False,
-                 num_classes: int = 10,
+                 num_classes: int = 2,
                  **kwargs):
         super().__init__(num_quad_sites=Q)
         input_dims = input_dim
