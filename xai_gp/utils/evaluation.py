@@ -29,7 +29,7 @@ def extract_predictions(model, batch_x, is_classification=False):
         if is_gp_model(model):
             latent_dist = model(batch_x)  # Latent function values
             pred_dist = model.likelihood(latent_dist)  # Class probabilities
-            probs = pred_dist.probs.mean(dim=0)
+            probs = pred_dist.probs.mean(dim=(0, 1))
             return probs, None
         else:
             probs = model(batch_x)
