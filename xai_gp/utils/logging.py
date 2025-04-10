@@ -1,5 +1,6 @@
 from loguru import logger
 import time
+import wandb
 
 def log_training_start(model_type, num_epochs, num_samples):
     """Log the start of a training process."""
@@ -7,15 +8,19 @@ def log_training_start(model_type, num_epochs, num_samples):
     return time.time()
 
 
-def log_epoch_stats(epoch, num_epochs, epoch_loss, data_loader_length, epoch_start_time):
+def log_epoch_stats(epoch, num_epochs, epoch_loss, data_loader_length, epoch_start_time, type='train'):
     """Log statistics for a single training epoch."""
     epoch_time = time.time() - epoch_start_time
     avg_epoch_loss = epoch_loss / data_loader_length
     logger.info(
+        f"{type.capitalize()} - "
         f"Epoch {epoch + 1}/{num_epochs} - "
         f"Loss: {avg_epoch_loss:.4f} - "
         f"Time: {epoch_time:.2f}s"
     )
+    # Log in train
+    if wandb.run is not None:
+        wandb.log({f'{type}/loss': avg_epoch_loss}, step=epoch + 1)
     return avg_epoch_loss
 
 

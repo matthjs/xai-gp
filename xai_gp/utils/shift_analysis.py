@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from xai_gp.utils.evaluation import evaluate_model
+from xai_gp.utils.training import collate_fn
+import wandb
 
 def plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Calibration Error"):
     aggregated = {sev: [] for sev in severity_levels}
@@ -33,7 +35,7 @@ def plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     print(f"Saving aggregated box plot to: {save_path}")
     plt.savefig(save_path)
-    plt.show()
+    wandb.log({"aggregated_boxplot": wandb.Image(save_path)})
 
 def plot_aggregated_boxplot_accuracy(results, severity_levels, metric="coverage", ylabel="Empirical Coverage"):
     aggregated = {sev: [] for sev in severity_levels}
@@ -63,7 +65,7 @@ def plot_aggregated_boxplot_accuracy(results, severity_levels, metric="coverage"
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     print(f"Saving aggregated coverage box plot to: {save_path}")
     plt.savefig(save_path)
-    plt.show()
+    wandb.log({"aggregated_boxplot_coverage": wandb.Image(save_path)})
 
 def apply_shift(X, shift_type, severity):
     if shift_type == "gaussian":
@@ -118,7 +120,7 @@ def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type
     
     # Create a new DataLoader with the shifted data.
     shifted_test_dataset = TensorDataset(shifted_test_tensor, test_labels.cpu())
-    shifted_test_loader = DataLoader(shifted_test_dataset, batch_size=batch_size)
+    shifted_test_loader = DataLoader(shifted_test_dataset, batch_size=batch_size, collate_fn=collate_fn)
     
     metrics = evaluate_model(model, shifted_test_loader, cfg)
 

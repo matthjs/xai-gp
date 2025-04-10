@@ -65,7 +65,7 @@ def create_model_instance(params: Dict[str, Any], model_type: str, cfg) -> torch
     # For Deep Ensemble models, create a base model function
     if model_type in ["DeepEnsembleRegressor", "DeepEnsembleClassifier"]:
         # Extract parameters for the base model only
-        hidden_layers_config = params.pop("hidden_layers_config", None)
+        hidden_layers_config = params.get("hidden_layers_config", None)
         input_dim = params.pop("input_dim", None)
         
         # Create base model function
@@ -137,7 +137,8 @@ def run_hyperparameter_optimization(
     # Create evaluation function
     eval_fn = partial(evaluate_model, test_loader=test_loader, cfg=cfg)
     
-    objective = 'mae' if cfg.data.task_type == 'regression' else 'accuracy'
+    objective = 'nll' if cfg.data.task_type == 'regression' else 'accuracy'
+    minimize = True if objective in ['mae', 'nll', 'mse', 'calibration_error'] else False
     
     # Create and run optimizer
     optimizer = BayesianOptimizer(
@@ -147,11 +148,15 @@ def run_hyperparameter_optimization(
         eval_fn=eval_fn,
         device=device,
         objective_name=objective,
-        minimize=cfg.hyperparam_tuning.minimize
+        minimize=minimize,
     )
     
     print(f"Running Bayesian optimization with {cfg.hyperparam_tuning.n_trials} trials...")
     best_params = optimizer.optimize(n_trials=cfg.hyperparam_tuning.n_trials)
+    
+    # Add objective to best parameters
+    best_params["objective"] = objective
+    best_params["is_minimize"] = minimize
     
     # Print and return best parameters
     print("\nBest parameters found:")
