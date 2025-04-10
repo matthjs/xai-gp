@@ -3,7 +3,7 @@
 # Default configuration groups
 defaults:
   - data: casp
-  - model: dspp
+  - model: deepgp
   - training: default
   - _self_  # For overriding with command line arguments
 
@@ -13,5 +13,90 @@ random_seed: 42
 
 # Hyperparameter tuning configuration
 hyperparam_tuning:
-  enabled: false  # Set to true to enable Bayesian optimization
+  enabled: False  # Set to true to enable Bayesian optimization
   n_trials: 20    # Number of trials to run
+
+# Do multiple evaluation across all models
+# (assumes model contains the relevant hyperparams)
+compare_all:
+  enabled: True
+  n_samples: 5
+  # This is not ideal but I need all configs to be in one place
+  deepgp:
+    type: "DeepGPModel"
+    gp_mode: "DeepGP"
+    num_inducing_points: 128
+    hidden_layers:
+        - output_dims: 3
+          mean_type: "linear"
+        - output_dims: null
+          mean_type: "constant"
+    training:
+      batch_size: 1024
+      num_epochs: 5
+      learning_rate: 0.1
+      optimizer: "Adam"
+      shuffle: true
+
+  dspp:
+    type: "DSPPModel"
+    gp_mode: "DSPP"
+    num_inducing_points: 128
+    beta: 0.05 # Add beta parameter
+
+    # Same as GP for now
+    hidden_layers:
+      - output_dims: null
+        mean_type: "constant"
+    training:
+      batch_size: 1024
+      num_epochs: 5
+      learning_rate: 0.1
+      optimizer: "Adam"
+      shuffle: true
+  ensemble_cla:
+    type: "DeepEnsembleClassifier"
+
+    num_ensemble_models: 5
+
+    hidden_layers:
+      - output_dims: 32
+        activation: "relu"
+      - output_dims: 16
+        activation: "relu"
+      - output_dims: 8
+        activation: "relu"
+    output_dim: 100  # Because CIFAR-100 has 100 classes
+    training:
+      batch_size: 1024
+      num_epochs: 5
+      learning_rate: 0.1
+      optimizer: "Adam"
+      shuffle: true
+  ensemble_mlp:
+    type: "DeepEnsembleRegressor"  # Can be DeepEnsembleRegressor or DeepEnsembleClassifier
+
+    # Number of models in the ensemble
+    num_ensemble_models: 5
+
+    # Hidden layer configuration
+    hidden_layers:
+      - output_dims: 32
+        activation: "relu"
+      - output_dims: 16
+        activation: "relu"
+      - output_dims: 8
+        activation: "relu"
+
+    output_dim: 1
+    training:
+      batch_size: 1024
+      num_epochs: 30
+      learning_rate: 0.1
+      optimizer: "Adam"
+      shuffle: true
+
+
+
+
+

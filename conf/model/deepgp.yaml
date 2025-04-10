@@ -2,13 +2,11 @@
 
 type: "DeepGPModel"
 gp_mode: "DeepGP"
-num_inducing_points: 500
+num_inducing_points: 128
 
 # Architecture for DeepGP
 hidden_layers:
-  - output_dims: 4
-    mean_type: "linear"
-  - output_dims: 4
+  - output_dims: 3
     mean_type: "linear"
   - output_dims: null
     mean_type: "constant"

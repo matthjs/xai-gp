@@ -60,7 +60,7 @@ def main(cfg: DictConfig):
         )
 
         statistical_comparison(cfg, train_loader, val_loader, test_loader, input_shape, device)
-
+        return
     else:
         wandb_config = OmegaConf.to_container(
             cfg, resolve=True, throw_on_missing=True
