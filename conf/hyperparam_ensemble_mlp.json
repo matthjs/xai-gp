@@ -9,10 +9,9 @@
     "name": "hidden_layers_config",
     "type": "choice",
     "values": [
-      "[{\"output_dims\": 16, \"activation\": \"relu\"}, {\"output_dims\": 8, \"activation\": \"relu\"}]",
-      "[{\"output_dims\": 32, \"activation\": \"relu\"}, {\"output_dims\": 16, \"activation\": \"relu\"}]",
       "[{\"output_dims\": 64, \"activation\": \"relu\"}, {\"output_dims\": 32, \"activation\": \"relu\"}]",
-      "[{\"output_dims\": 128, \"activation\": \"relu\"}, {\"output_dims\": 64, \"activation\": \"relu\"}]"
+      "[{\"output_dims\": 128, \"activation\": \"relu\"}, {\"output_dims\": 64, \"activation\": \"relu\"}]",
+      "[{\"output_dims\": 256, \"activation\": \"relu\"}, {\"output_dims\": 128, \"activation\": \"relu\"}]"
     ],
     "value_type": "str"
   },
