@@ -106,14 +106,11 @@ def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_p
 
 def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     """Evaluate the model's performance."""
-    
-<<<<<<< HEAD
+
     # For some reason, the ensemble tends to break during inference in evaluation mode
     if hasattr(cfg, 'model') and cfg.model is not None and cfg.model.type != "DeepEnsembleClassifier":
         model.eval()
     
-=======
->>>>>>> 78fd203f06dac99cea0b809d2bc4303f9d37944b
     if cfg.data.task_type == "classification":
         all_probs = []
         all_targets = []
