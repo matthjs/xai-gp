@@ -62,13 +62,19 @@ def run_ensemble_classification_epoch(ensemble, data_loader, loss_fn, jitter=1e-
         ensemble.eval()
     
     total_loss = 0.0
-    
+    device = next(ensemble.models[0].parameters()).device  # Infer device from the first ensemble model
+
     with torch.no_grad() if not is_training else torch.enable_grad():
         for x_batch, y_batch in data_loader:
             batch_loss = 0.0
+            if x_batch.device != device:
+                x_batch = x_batch.to(device)
+            if y_batch.device != device:
+                y_batch = y_batch.to(device)
             
             # Process each model in the ensemble
             for i, model in enumerate(ensemble.models):
+
                 # Compute predictions and loss
                 mean, var = model(x_batch)
                 logits = MultivariateNormal(mean, torch.diag_embed(var + jitter)).rsample()

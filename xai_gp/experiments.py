@@ -19,14 +19,14 @@ def ablation_inducing(cfg) -> None:
     # Consider a single layer GP
     hidden_layer_config = [
         {
-            'output_dims': None,  # Last layer (output) - None for univariate regression
+            'output_dims': 10,  # Last layer (output) - None for univariate regression
             'mean_type': 'constant'  # Constant mean for final layer
         }
     ]
 
     inducing_points = [32, 64, 128, 256, 512]
     constructors = [DeepGPModel, DSPPModel]
-    model_names = ["DGP", "DSPP"]
+    model_names = ["DeepGP", "DSPP"]
 
     results = {name: {"x": [], "y": []} for name in model_names}
 
@@ -36,7 +36,8 @@ def ablation_inducing(cfg) -> None:
             model = constructor(
                 input_dim=input_shape[-1],
                 hidden_layers_config=hidden_layer_config,
-                num_inducing_points=num_inducing
+                num_inducing_points=num_inducing,
+                classification=True
             ).to(device)
 
             optimizer = getattr(torch.optim, cfg.training.optimizer)(
@@ -78,7 +79,7 @@ def ablation_layers(cfg) -> None:
     depth_levels = [1, 2, 4, 8]
 
     constructors = [DeepGPModel, DSPPModel]
-    model_names = ["DGP", "DSPP"]
+    model_names = ["DeepGP", "DSPP"]
     results = {name: {"x": [], "y": []} for name in model_names}
 
     for constructor, model_name in zip(constructors, model_names):

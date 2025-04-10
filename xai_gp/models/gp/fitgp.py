@@ -18,9 +18,17 @@ def run_gp_epoch(model, data_loader, mll, optimizer=None, is_training=True):
         model.eval()
     
     total_loss = 0.0
+    # Determine the target device from the model
+    device = next(model.parameters()).device
     
     with torch.no_grad() if not is_training else torch.enable_grad():
         for x_batch, y_batch in data_loader:
+            # Move batches to the target device if they're not already there
+            if x_batch.device != device:
+                x_batch = x_batch.to(device)
+            if y_batch.device != device:
+                y_batch = y_batch.to(device)
+                
             if is_training and optimizer:
                 optimizer.zero_grad()
                 

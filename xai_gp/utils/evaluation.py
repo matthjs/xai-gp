@@ -110,12 +110,21 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     # For some reason, the ensemble tends to break during inference in evaluation mode
     if hasattr(cfg, 'model') and cfg.model is not None and cfg.model.type != "DeepEnsembleClassifier":
         model.eval()
+
+    # Doing it like this for now.
+    device = torch.device(cfg.device if torch.cuda.is_available() and cfg.device == 'cuda' else 'cpu')
     
     if cfg.data.task_type == "classification":
         all_probs = []
         all_targets = []
+
         with torch.no_grad():
             for batch_x, batch_y in test_loader:
+                # Move batches to the target device if they're not already there
+                if batch_x.device != device:
+                    batch_x = batch_x.to(device)
+                if batch_y.device != device:
+                    batch_y = batch_y.to(device)
                 prob, _ = extract_predictions(model, batch_x, is_classification=True)  # This should now be a tensor of shape (batch_size, num_classes)
                 all_probs.append(prob)
                 all_targets.append(batch_y)
@@ -172,6 +181,11 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
 
         with torch.no_grad():
             for batch_x, batch_y in test_loader:
+                # Move batches to the target device if they're not already there
+                if batch_x.device != device:
+                    batch_x = batch_x.to(device)
+                if batch_y.device != device:
+                    batch_y = batch_y.to(device)
                 means, variances = extract_predictions(model, batch_x)
                 all_means.append(means)
                 all_variances.append(variances)
