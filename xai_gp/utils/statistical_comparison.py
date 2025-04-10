@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from collections import defaultdict
 
 from baycomp import CorrelatedTTest
@@ -50,11 +51,10 @@ def statistical_comparison(cfg, train_loader, val_loader, test_loader, input_sha
         model_metrics = defaultdict(list)
         # Statistically better: retrain model at every run
         # Not done here -->
-        model, optimizer = initialize_model(cfg, input_shape, device)
-        train_model(model, train_loader, optimizer, cfg, val_loader=val_loader)
-
         for run in range(n_samples):
             print(f"  Run {run + 1}/{n_samples}")
+            model, optimizer = initialize_model(cfg, input_shape, device)
+            train_model(model, train_loader, optimizer, cfg, val_loader=val_loader)
             metrics = evaluate_model(model, test_loader, cfg)
 
             for k, v in metrics.items():
@@ -68,3 +68,17 @@ def statistical_comparison(cfg, train_loader, val_loader, test_loader, input_sha
         bt = CorrelatedTTest.probs(np.array(results[pair[0]]['calibration_error']),
                              np.array(results[pair[1]]['calibration_error']), rope=0)
         print(bt)
+
+    data = {}
+    for metric, predictors in results.items():
+        for predictor, values in predictors.items():
+            mean = np.mean(values)
+            stddev = np.std(values)
+            data[(metric, predictor)] = {'mean': mean, 'stdev': stddev}
+
+    # Convert to a DataFrame for better visualization
+    df = pd.DataFrame(data)
+
+    # Transpose to get metrics as rows and predictors as columns
+    df = df.T
+    print(df)
