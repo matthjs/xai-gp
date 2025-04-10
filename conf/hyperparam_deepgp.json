@@ -20,7 +20,7 @@
   {
     "name": "lr",
     "type": "range",
-    "bounds": [1e-5, 1e-2],
+    "bounds": [1e-3, 1e-1],
     "log_scale": true,
     "value_type": "float"
   },
