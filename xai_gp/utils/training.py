@@ -1,3 +1,4 @@
+from PIL import Image
 from xai_gp.models.gp import fit_gp
 from xai_gp.models.ensemble import train_ensemble_regression, train_ensemble_classification
 from xai_gp.models.gp import DeepGPModel, DSPPModel
@@ -33,10 +34,10 @@ def prepare_data(cfg, device):
         print("dataset_path", dataset_path)
         # Define image transforms including normalization.
         transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5071, 0.4867, 0.4408],
-                                 std=[0.2675, 0.2565, 0.2761]),
-            transforms.Lambda(lambda x: x.view(-1))
+            transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
+            transforms.ToTensor(),  # Shape: [1, H, W]
+            transforms.Normalize(mean=[0.5], std=[0.5]),   # Check this
+            transforms.Lambda(lambda x: x.flatten())  # Flatten to 1D vector
         ])
 
         # Load CIFAR-10 using torchvision.
@@ -55,7 +56,7 @@ def prepare_data(cfg, device):
         test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
 
         # For CIFAR-10, the input shape is (3, 32, 32).
-        input_shape = (3, 32, 32)
+        input_shape = (32 * 32,)  # Since it's grayscale and flattened
 
         print("CIFAR-10 dataset loaded.")
         print(f"Training samples: {len(train_dataset)}")
