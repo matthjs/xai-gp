@@ -14,7 +14,7 @@ import hydra
 def ablation_inducing(cfg) -> None:
     device = torch.device(cfg.device if torch.cuda.is_available() and cfg.device == 'cuda' else 'cpu')
     print(f"Using device: {device}")
-    train_loader, test_loader, input_shape = prepare_data(cfg, device)
+    train_loader, val_loader, test_loader, input_shape = prepare_data(cfg, device)
 
     # Consider a single layer GP
     hidden_layer_config = [
@@ -65,13 +65,14 @@ def ablation_inducing(cfg) -> None:
     plt.legend()
     plt.tight_layout()
     plt.savefig("inducing_points_vs_calibration_error.png", dpi=300)
+    plt.savefig("inducing_points_vs_calibration_error.svg", dpi=300)
     # plt.show()
 
 
 def ablation_layers(cfg) -> None:
     device = torch.device(cfg.device if torch.cuda.is_available() and cfg.device == 'cuda' else 'cpu')
     print(f"Using device: {device}")
-    train_loader, test_loader, input_shape = prepare_data(cfg, device)
+    train_loader, val_loader, test_loader, input_shape = prepare_data(cfg, device)
 
     num_inducing = 128
     depth_levels = [1, 2, 4, 8]
@@ -119,6 +120,7 @@ def ablation_layers(cfg) -> None:
     plt.legend()
     plt.tight_layout()
     plt.savefig("depth_vs_calibration_error.png", dpi=300)
+    plt.savefig("depth_vs_calibration_error.svg", dpi=300)
 
 
 @hydra.main(version_base=None, config_path="../conf", config_name="abl_config")

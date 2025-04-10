@@ -2,7 +2,7 @@
 
 # Default configuration groups
 defaults:
-  - data: casp
+  - data: cifar10
   - model: dspp
   - training: default
   - _self_  # For overriding with command line arguments

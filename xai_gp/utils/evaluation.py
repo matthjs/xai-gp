@@ -106,7 +106,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     """Evaluate the model's performance."""
     
     # For some reason, the ensemble tends to break during inference in evaluation mode
-    if cfg.model.type != "DeepEnsembleClassifier":
+    if hasattr(cfg, 'model') and cfg.model is not None and cfg.model.type != "DeepEnsembleClassifier":
         model.eval()
     
     if cfg.data.task_type == "classification":
