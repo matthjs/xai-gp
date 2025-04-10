@@ -33,7 +33,7 @@ compare_all:
           mean_type: "constant"
     training:
       batch_size: 1024
-      num_epochs: 5
+      num_epochs: 2
       learning_rate: 0.1
       optimizer: "Adam"
       shuffle: true
@@ -50,7 +50,7 @@ compare_all:
         mean_type: "constant"
     training:
       batch_size: 1024
-      num_epochs: 5
+      num_epochs: 2
       learning_rate: 0.1
       optimizer: "Adam"
       shuffle: true
@@ -69,7 +69,7 @@ compare_all:
     output_dim: 100  # Because CIFAR-100 has 100 classes
     training:
       batch_size: 1024
-      num_epochs: 5
+      num_epochs: 2
       learning_rate: 0.1
       optimizer: "Adam"
       shuffle: true
@@ -91,7 +91,7 @@ compare_all:
     output_dim: 1
     training:
       batch_size: 1024
-      num_epochs: 30
+      num_epochs: 2
       learning_rate: 0.1
       optimizer: "Adam"
       shuffle: true
