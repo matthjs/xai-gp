@@ -1,4 +1,6 @@
 from omegaconf import DictConfig, OmegaConf
+
+from xai_gp.utils.statistical_comparison import statistical_comparison
 from xai_gp.utils.training import train_model, prepare_data, initialize_model
 from xai_gp.utils.evaluation import evaluate_model
 from xai_gp.hyperparam_tuning.hyperparameter_optimization import (
@@ -25,6 +27,8 @@ def main(cfg: DictConfig):
     tuning_mode = "optimized" if is_tuning else 'standard'
     wandb_name = f"{cfg.model.type}_{cfg.data.name}_{tuning_mode}"
 
+    compare_all = cfg.get("compare_all", {}).get("enabled", False)
+
     # Check if hyperparameter tuning is enabled
     if is_tuning:
         print("Running hyperparameter optimization...")
@@ -48,8 +52,16 @@ def main(cfg: DictConfig):
         print("\nTraining final model with best parameters...")
         train_model(model, train_loader, optimizer, cfg, best_params=best_params, val_loader=val_loader)
         metrics = evaluate_model(model, test_loader, cfg, best_params=best_params)
+    elif compare_all:
+        wandb.init(
+            project="uncertainty-estimation-gp",
+            entity="im2latex-replicate",
+            name=wandb_name,
+        )
+
+        statistical_comparison(cfg, train_loader, val_loader, test_loader, input_shape, device)
+
     else:
-        
         wandb_config = OmegaConf.to_container(
             cfg, resolve=True, throw_on_missing=True
         )
@@ -62,8 +74,7 @@ def main(cfg: DictConfig):
             name=wandb_name,
             mode='offline',
         )
-        
-        
+
         # Standard training workflow
         model, optimizer = initialize_model(cfg, input_shape, device)
         train_model(model, train_loader, optimizer, cfg, val_loader=val_loader)
