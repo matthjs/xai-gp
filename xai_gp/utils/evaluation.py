@@ -46,7 +46,7 @@ def extract_predictions(model, batch_x, is_classification=False):
             return mean, variance
     
 
-def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_path='calibration_curve.png'):
+def plot_calibration_curve(conf, acc, y_label='Empirical Coverage Probability', title="Calibration Curve", relative_save_path='calibration_curve.png'):
     """
     Plot the calibration curve for regression uncertainty as a histogram.
     
@@ -82,7 +82,7 @@ def plot_calibration_curve(conf, acc, title="Calibration Curve", relative_save_p
     plt.axhline(y=0, color='black', linewidth=0.5)
 
     plt.xlabel('Confidence Level')
-    plt.ylabel('Empirical Coverage Probability')
+    plt.ylabel(y_label)
     plt.title(title)
     plt.legend(loc='lower right')
     plt.grid(True, alpha=0.3)
@@ -144,14 +144,17 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
         num_classes = test_probs.size(1)
         one_hot_targets = F.one_hot(test_targets, num_classes=num_classes).float()
         brier_score = torch.mean((test_probs - one_hot_targets) ** 2).item()
-        
+
+        max_probs, _ = torch.max(test_probs, dim=1)
+        max_probs = max_probs.cpu().numpy()
+
         # Send to CPU for calibration curve
         test_probs = test_probs.cpu().numpy()
         test_targets = test_targets.cpu().numpy()
         predicted = predicted.cpu().numpy()
-        
-        conf, acc = classifier_calibration_curve(predicted, test_targets, test_probs)
-        error = classifier_calibration_error(predicted, test_targets, test_probs)
+
+        conf, acc = classifier_calibration_curve(predicted, test_targets, max_probs)
+        error = classifier_calibration_error(predicted, test_targets, max_probs)
         
         print(f"Classification Accuracy: {accuracy:.4f}")
         print(f"NLL Loss: {nll.item():.4f}")
@@ -170,7 +173,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
             plot_title = f"Calibration Curve for {model_name}"
             save_path = f'calibration_{model_name}_{cfg.data.name}.png'
             
-            plot_calibration_curve(conf, acc, title=plot_title, relative_save_path=save_path)
+            plot_calibration_curve(conf, acc, y_label="Confidence (max prob)", title=plot_title, relative_save_path=save_path)
         
         return metrics
     

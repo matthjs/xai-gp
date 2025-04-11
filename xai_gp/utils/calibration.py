@@ -77,7 +77,7 @@ def classifier_calibration_error(y_pred, y_true, y_confidences, metric="mae", nu
     return np.mean(errors)
 
 
-def classifier_calibration_curve(y_pred, y_true, y_confidences, metric="mae", num_bins=10):
+def classifier_calibration_curve(y_pred, y_true, y_confidences, metric="mae", num_bins=20):
     """
         Estimates the calibration plot for a classifier and returns the points in the plot.
         y_pred are the class predictions of the model (integers), while y_true is the ground truth labels (integers),
