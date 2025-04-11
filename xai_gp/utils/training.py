@@ -33,7 +33,6 @@ def collate_fn(batch, device='cuda'):
 def prepare_data(cfg, device):
     dataset_path = cfg.data.path
     if cfg.data.name.lower() == "esr":
-        # TODO: Double check this
         print("dataset_path", dataset_path)
         # Load the dataset
         df = pd.read_csv(dataset_path)
@@ -53,24 +52,20 @@ def prepare_data(cfg, device):
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
 
-        # Convert to PyTorch tensors
         X_tensor = torch.tensor(X, dtype=torch.float32)
         y_tensor = torch.tensor(y, dtype=torch.long)
-
-        # Create a TensorDataset
         dataset = TensorDataset(X_tensor, y_tensor)
 
         # Define split sizes
         total_size = len(dataset)
-        train_size = int((cfg.data.test_size * 2) * total_size)
-        val_size = int(cfg.data.test_size * total_size)
-        test_size = total_size - train_size - val_size
+        train_size = int((1 - 2 * cfg.data.test_size) * total_size)
+        val_size = test_size = int(cfg.data.test_size * total_size)
 
         # Split the dataset
         train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
 
         # Create DataLoaders
-        batch_size = 64
+        batch_size = cfg.training.batch_size
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=batch_size)
         test_loader = DataLoader(test_dataset, batch_size=batch_size)
