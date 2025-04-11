@@ -1,4 +1,6 @@
 import numpy as np
+from PIL import Image, ImageEnhance, ImageFilter
+import cv2
 
 def apply_shift(X, shift_type, severity):
     """
@@ -28,9 +30,6 @@ def apply_shift(X, shift_type, severity):
         return X * scaling_factor
     else:
         raise ValueError(f"Unknown shift type: {shift_type}")
-import numpy as np
-from PIL import Image, ImageEnhance, ImageFilter
-import cv2
 
 def _to_pil(image):
     image_uint8 = (np.clip(image, 0, 1) * 255).astype(np.uint8)
