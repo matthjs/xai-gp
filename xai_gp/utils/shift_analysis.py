@@ -6,103 +6,41 @@ from torch.utils.data import DataLoader, TensorDataset
 from xai_gp.utils.evaluation import evaluate_model
 from xai_gp.utils.training import collate_fn
 import wandb
+from xai_gp.utils.shift import apply_shift  # Import our unified shift function
 
-def plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Calibration Error"):
+def plot_aggregated_boxplot(results, severity_levels, metric, ylabel):
     aggregated = {sev: [] for sev in severity_levels}
-    for shift in results:
-        for entry in results[shift]:
+    for key in results:
+        for entry in results[key]:
             sev = entry["severity"]
             if sev in aggregated:
                 aggregated[sev].append(entry[metric])
-    
     data = [aggregated[sev] for sev in severity_levels]
     positions = list(range(len(severity_levels)))
-    
     fig, ax = plt.subplots(figsize=(10, 6))
     bp = ax.boxplot(data, positions=positions, widths=0.4, patch_artist=True, showfliers=True, whis=[0, 100])
-    
     for box in bp['boxes']:
         box.set(facecolor='lightblue')
-    
     ax.set_xticks(positions)
     ax.set_xticklabels(severity_levels)
     ax.set_xlim(-0.5, len(severity_levels)-0.5)
     ax.set_xlabel("Shift Severity")
     ax.set_ylabel(ylabel)
     ax.set_title(f"{ylabel} vs. Shift Severity (Aggregated Across Shift Types)")
-    
     save_path = os.path.join('../results', 'shift_analysis', f'aggregated_boxplot_{metric}.png')
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     print(f"Saving aggregated box plot to: {save_path}")
     plt.savefig(save_path)
-    wandb.log({"aggregated_boxplot": wandb.Image(save_path)})
+    wandb.log({f"aggregated_boxplot_{metric}": wandb.Image(save_path)})
 
-def plot_aggregated_boxplot_accuracy(results, severity_levels, metric="coverage", ylabel="Empirical Coverage"):
-    aggregated = {sev: [] for sev in severity_levels}
-    for shift in results:
-        for entry in results[shift]:
-            sev = entry["severity"]
-            if sev in aggregated:
-                aggregated[sev].append(entry[metric])
-    
-    data = [aggregated[sev] for sev in severity_levels]
-    positions = list(range(len(severity_levels)))
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bp = ax.boxplot(data, positions=positions, widths=0.4, patch_artist=True, showfliers=True, whis=[0, 100])
-    
-    for box in bp['boxes']:
-        box.set(facecolor='lightblue')
-    
-    ax.set_xticks(positions)
-    ax.set_xticklabels(severity_levels)
-    ax.set_xlim(-0.5, len(severity_levels)-0.5)
-    ax.set_xlabel("Shift Severity")
-    ax.set_ylabel(ylabel)
-    ax.set_title(f"{ylabel} vs. Shift Severity (Aggregated Across Shift Types)")
-    
-    save_path = os.path.join('../results', 'shift_analysis', 'aggregated_boxplot_coverage.png')
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    print(f"Saving aggregated coverage box plot to: {save_path}")
-    plt.savefig(save_path)
-    wandb.log({"aggregated_boxplot_coverage": wandb.Image(save_path)})
-
-def apply_shift(X, shift_type, severity):
-    if shift_type == "gaussian":
-        noise = np.random.normal(loc=0, scale=severity * np.std(X, axis=0), size=X.shape)
-        return X + noise
-    elif shift_type == "mask":
-        mask = np.random.rand(*X.shape) < severity
-        X_shifted = X.copy()
-        X_shifted[mask] = 0
-        return X_shifted
-    elif shift_type == "scaling":
-        scaling_factor = 1 + severity
-        return X * scaling_factor
-    else:
-        raise ValueError(f"Unknown shift type: {shift_type}")
-    
-
-def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type, severity, best_params=None):
+def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type, severity):
     """
     Evaluate the model on shifted test data.
     
-    Args:
-        model: The trained model.
-        test_loader (DataLoader): DataLoader containing test data.
-        batch_size (int): Batch size for evaluation.
-        device: Torch device.
-        shift_type (str): The type of shift to apply ("gaussian", "mask", "scaling").
-        severity (float): Severity level of the corruption.
-    
-    Returns:
-        mae (float): Mean Absolute Error.
-        cal_error (float): Calibration error computed with regressor_calibration_error.
-        conf (np.array): Confidence levels for the calibration curve.
-        acc (np.array): Empirical coverage (accuracy) corresponding to the confidence levels.
+    For classification tasks, return accuracy and expected calibration error (ECE).
+    For regression tasks, return MAE, calibration error and derived empirical coverage.
     """
-    
-    # Extract all test data from the loader.
+    print("Start of shift analysis")
     all_features = []
     all_labels = []
     for batch_x, batch_y in test_loader:
@@ -110,45 +48,65 @@ def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type
         all_labels.append(batch_y)
     test_features = torch.cat(all_features, dim=0)
     test_labels = torch.cat(all_labels, dim=0)
-    
-    # Apply the specified shift to the features.
     X_np = test_features.cpu().numpy()
-    # print(X_np)
     shifted_X_np = apply_shift(X_np, shift_type, severity)
-    # print(shifted_X_np)
+    shifted_X_np = shifted_X_np.reshape(test_features.shape)
     shifted_test_tensor = torch.FloatTensor(shifted_X_np).to(device)
-    
-    # Create a new DataLoader with the shifted data.
     shifted_test_dataset = TensorDataset(shifted_test_tensor, test_labels.cpu())
-    shifted_test_loader = DataLoader(shifted_test_dataset, batch_size=batch_size, collate_fn=collate_fn)
-    
+    shifted_test_loader = DataLoader(shifted_test_dataset, batch_size=batch_size, collate_fn=lambda batch: collate_fn(batch, device=device))
     metrics = evaluate_model(model, shifted_test_loader, cfg)
-
-    mae = metrics['mae']
-    cal_error = metrics['calibration_error']
-
-    return mae, cal_error
-
+    
+    if cfg.data.task_type == "classification":
+        accuracy = metrics['accuracy']
+        ece = metrics['calibration_error']
+        return {"severity": severity, "accuracy": accuracy, "ece": ece}
+    else:
+        mae = metrics['mae']
+        cal_error = metrics['calibration_error']
+        return {"severity": severity, "mae": mae, "cal_error": cal_error}
 
 def run_shift_analysis(model, test_loader, cfg, device):
-    shift_types = ["gaussian", "mask", "scaling"]
-    severity_levels = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8]
+    """
+    Run shift analysis for both regression and classification.
+    For classification tasks, use the 16 image corruption types.
+    For regression tasks, use simple numeric shift types.
+    
+    For regression, this version also saves the results per method so that you can later
+    combine the outputs from different models into one big grouped plot.
+    """
     results = {}
     
-    for shift in shift_types:
-        results[shift] = []
-        for sev in severity_levels:
-            mae, cal_err = evaluate_under_shift(
-                model, test_loader, cfg, cfg.training.batch_size, device, shift, sev
-            )
-            coverage_val = 1 - (mae / 100)  
-            results[shift].append({
-                "severity": sev, 
-                "mae": mae, 
-                "cal_error": cal_err,
-                "coverage": coverage_val,
-            })
-            print(f"Shift: {shift}, Severity: {sev}, MAE: {mae:.4f}, Cal Error: {cal_err:.4f}")
+    if cfg.data.task_type == "classification":
+        corruption_types = [
+            "Glass Blur", "Impulse Noise", "Pixelate", "Saturate", "Brightness", "Contrast",
+            "Defocus Blur", "Elastic Transform", "Shot noise", "Spatter", "Speckle noise",
+            "Zoom blur", "Fog", "Frost", "Gaussian Blur", "Gaussian noise"
+        ]
+        severity_levels = [0, 1, 2, 3, 4, 5]
+        for corruption in corruption_types:
+            results[corruption] = []
+            for sev in severity_levels:
+                metric_dict = evaluate_under_shift(model, test_loader, cfg, cfg.training.batch_size, device, corruption, sev)
+                results[corruption].append(metric_dict)
+                print(f"Corruption: {corruption}, Severity: {sev}, Accuracy: {metric_dict['accuracy']:.4f}, ECE: {metric_dict['ece']:.4f}")
+        plot_aggregated_boxplot(results, severity_levels, metric="ece", ylabel="Expected Calibration Error")
+        plot_aggregated_boxplot(results, severity_levels, metric="accuracy", ylabel="Accuracy")
     
-    plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Calibration Error")
-    plot_aggregated_boxplot_accuracy(results, severity_levels, metric="coverage", ylabel="Empirical Coverage")
+    else:
+        # Regression branch.
+        shift_types = ["gaussian", "mask", "scaling"]
+        severity_levels = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8]
+        for shift in shift_types:
+            results[shift] = []
+            for sev in severity_levels:
+                metric_dict = evaluate_under_shift(model, test_loader, cfg, cfg.training.batch_size, device, shift, sev)
+                results[shift].append(metric_dict)
+                print(f"Shift: {shift}, Severity: {sev}, MAE: {metric_dict['mae']:.4f}, Cal Error: {metric_dict['cal_error']:.4f}")
+        # Plot individual aggregated boxplots for regression.
+        plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Calibration Error")
+        plot_aggregated_boxplot(results, severity_levels, metric="mae", ylabel="MAE")
+        # Save these results along with the model method for later combined analysis.
+        #save_path = os.path.join('../results', 'shift_analysis', f"regression_results_{cfg.model.type}.npz")
+        #os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        #np.savez(save_path, results=results, method=cfg.model.type)
+        #print(f"Saved regression shift results for method {cfg.model.type} to {save_path}")
