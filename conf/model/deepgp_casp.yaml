@@ -2,7 +2,7 @@
 
 type: "DeepGPModel"
 gp_mode: "DeepGP"
-num_inducing_points: 128
+num_inducing_points: 159
 
 # Architecture for DeepGP
 hidden_layers:
