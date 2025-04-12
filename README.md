@@ -20,7 +20,9 @@ python main.py model=model_config.yaml data=data_config.yaml
 ### Available Datasets
 
 - `CASP`: Protein regression dataset
-- `CIFAR100`: Image classification dataset (TBD)
+- `ESR`: Seizure classification dataset
+
+We provide optimized hyperparameters for the models inside the `conf/models` directory.
 
 ## Getting Started
 ### Prerequisites
@@ -43,6 +45,9 @@ poetry shell
 ```
 IDEs like Pycharm will be able to detect the interpreter of this virtual environment.
 
+## Reproducibility
+
+We save the weights of our optimized model inside the `results/weights` directory.
 
 # License
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](./LICENSE) file for details.
