@@ -223,6 +223,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
         )
         
         print(f"Calibration error: {calibration_error:.4f}")
+        print(f"nll: {nll:.4f}")
 
         # Only plot for optimized values
         if best_params or plotting:

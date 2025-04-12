@@ -1,3 +1,4 @@
+from matplotlib.ticker import FormatStrFormatter
 from omegaconf import DictConfig
 import matplotlib.pyplot as plt
 from xai_gp.models.gp import DeepGPModel, DSPPModel, fit_gp
@@ -19,7 +20,7 @@ def ablation_inducing(cfg) -> None:
     # Consider a single layer GP
     hidden_layer_config = [
         {
-            'output_dims': 10,  # Last layer (output) - None for univariate regression
+            'output_dims': 2 if cfg.data.task_type == "classification" else None,  # Last layer (output) - None for univariate regression
             'mean_type': 'constant'  # Constant mean for final layer
         }
     ]
@@ -37,7 +38,7 @@ def ablation_inducing(cfg) -> None:
                 input_dim=input_shape[-1],
                 hidden_layers_config=hidden_layer_config,
                 num_inducing_points=num_inducing,
-                classification=True
+                classification=cfg.data.task_type == "classification"
             ).to(device)
 
             optimizer = getattr(torch.optim, cfg.training.optimizer)(
@@ -48,25 +49,25 @@ def ablation_inducing(cfg) -> None:
             fit_gp(model, train_loader, cfg.training.num_epochs, optimizer, gp_mode=model_name)
 
             metrics = evaluate_model(model, test_loader, cfg)
-            ce = metrics["calibration_error"]
+            nll = metrics["nll"]
 
             results[model_name]["x"].append(num_inducing)
-            results[model_name]["y"].append(ce)
+            results[model_name]["y"].append(nll)
 
-    # Plotting
     plt.figure(figsize=(8, 6))
     for name, data in results.items():
         plt.plot(data["x"], data["y"], marker='o', label=name)
 
-    plt.title("Effect of Inducing Points on Calibration Error")
+    plt.title("Effect of Inducing Points on Negative Log Likelihood")
     plt.xlabel("Number of Inducing Points")
-    plt.ylabel("Calibration Error")
+    plt.ylabel("Negative Log Likelihood")
     plt.xscale("log", base=2)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("inducing_points_vs_calibration_error.png", dpi=300)
-    plt.savefig("inducing_points_vs_calibration_error.svg", dpi=300)
+    plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    plt.savefig("inducing_points_vs_nll.png", dpi=300)
+    plt.savefig("inducing_points_vs_nll.svg", dpi=300)
     # plt.show()
 
 
@@ -87,13 +88,14 @@ def ablation_layers(cfg) -> None:
             print(f"Training {model_name} with {depth} layer(s)...")
 
             hidden_layer_config = [
-                {"output_dims": 1, "mean_type": "constant"} for _ in range(depth - 1)
-            ] + [{"output_dims": None, "mean_type": "constant"}]
+                {"output_dims": 1, "mean_type": "linear"} for _ in range(depth - 1)
+            ] + [{"output_dims": 2 if cfg.data.task_type == "classification" else None, "mean_type": "constant"}]
 
             model = constructor(
                 input_dim=input_shape[-1],
                 hidden_layers_config=hidden_layer_config,
-                num_inducing_points=num_inducing
+                num_inducing_points=num_inducing,
+                classification=cfg.data.task_type == "classification"
             ).to(device)
 
             optimizer = getattr(torch.optim, cfg.training.optimizer)(
@@ -104,24 +106,24 @@ def ablation_layers(cfg) -> None:
             fit_gp(model, train_loader, cfg.training.num_epochs, optimizer, gp_mode=model_name)
 
             metrics = evaluate_model(model, test_loader, cfg)
-            ce = metrics["calibration_error"]
+            nll = metrics["nll"]
 
             results[model_name]["x"].append(depth)
-            results[model_name]["y"].append(ce)
+            results[model_name]["y"].append(nll)
 
-    # Plotting
     plt.figure(figsize=(8, 6))
     for name, data in results.items():
         plt.plot(data["x"], data["y"], marker='o', label=name)
 
-    plt.title("Effect of Depth on Calibration Error (1 unit per layer)")
+    plt.title("Effect of Depth on Negative Log Likelihood (1 unit per hidden layer)")
     plt.xlabel("Number of Layers")
-    plt.ylabel("Calibration Error")
+    plt.ylabel("Negative Log Likelihood")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("depth_vs_calibration_error.png", dpi=300)
-    plt.savefig("depth_vs_calibration_error.svg", dpi=300)
+    plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    plt.savefig("depth_vs_nll.png", dpi=300)
+    plt.savefig("depth_vs_nll.svg", dpi=300)
 
 
 @hydra.main(version_base=None, config_path="../conf", config_name="abl_config")

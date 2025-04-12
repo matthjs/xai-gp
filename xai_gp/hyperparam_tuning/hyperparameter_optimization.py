@@ -71,7 +71,7 @@ def create_model_instance(params: Dict[str, Any], model_type: str, cfg) -> torch
         # Create base model function
         base_model = lambda: TwoHeadMLP(
             input_dim=input_dim,
-            output_dim=1,  # Handled by dataset
+            output_dim=2 if model_type == "DeepEnsembleClassifier" else 1,  # TODO: THIS SHOULD BE CHANGED Handled by dataset
             hidden_layers_config=hidden_layers_config
         )
         
@@ -137,7 +137,7 @@ def run_hyperparameter_optimization(
     # Create evaluation function
     eval_fn = partial(evaluate_model, test_loader=test_loader, cfg=cfg)
     
-    objective = 'nll' if cfg.data.task_type == 'regression' else 'accuracy'
+    objective = 'nll' # if cfg.data.task_type == 'regression' else 'accuracy'
     minimize = True if objective in ['mae', 'nll', 'mse', 'calibration_error'] else False
     
     # Create and run optimizer
