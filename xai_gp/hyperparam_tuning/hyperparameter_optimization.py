@@ -58,7 +58,7 @@ def create_model_instance(params: Dict[str, Any], model_type: str, cfg) -> torch
         params["hidden_layers_config"] = json.loads(params["hidden_layers_config"])
     
     # Map parameter names to the ones expected by the models
-    if "num_inducing" in params and model_type in ["DGP", "DSPP"]:
+    if "num_inducing_points" in params and model_type in ["DeepGPModel", "DSPPModel"]:
         params["num_inducing_points"] = params.pop("num_inducing_points")
         params["classification"] = cfg.data.task_type == "classification"
     

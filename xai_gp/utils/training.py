@@ -70,7 +70,7 @@ def prepare_data(cfg, device):
         val_loader = DataLoader(val_dataset, batch_size=batch_size)
         test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-        input_shape = (178,)   # Hardcoded ajdust this
+        input_shape = X_tensor.shape
 
         """
         # Define image transforms including normalization.
@@ -168,10 +168,7 @@ def initialize_model(cfg, input_shape, device):
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 
     # Check if the model is a GP model using is_gp_model function
-    if cfg.data.task_type == "classification":
-        input_dim = int(torch.tensor(input_shape).prod().item())
-    else:
-        input_dim = input_shape[1]
+    input_dim = input_shape[1]
 
     if is_gp_model(model_class):
         is_classification = cfg.data.task_type == "classification"
