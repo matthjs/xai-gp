@@ -226,8 +226,8 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None, val_loade
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
         
     # Save the model
-    os.makedirs("results/weights", exist_ok=True)
-    model_path = f"results/weights/{cfg.model.type}_{cfg.data.task_type}_model.pth"
+    os.makedirs("../results/weights", exist_ok=True)
+    model_path = f"../results/weights/{cfg.model.type}_{cfg.data.task_type}_model.pth"
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 
