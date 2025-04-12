@@ -21,6 +21,7 @@ import torch
 from torchvision.datasets import CIFAR100, CIFAR10
 from torchvision import transforms
 from torch.utils.data import random_split
+import os
 
 # Helper function to move data to the GPU
 def collate_fn(batch, device='cuda'):
@@ -223,5 +224,11 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None, val_loade
             loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate, val_loader=val_loader)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
+        
+    # Save the model
+    os.makedirs("../results/weights", exist_ok=True)
+    model_path = f"../results/weights/{cfg.model.type}_{cfg.data.task_type}_model.pth"
+    torch.save(model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
 
     return loss

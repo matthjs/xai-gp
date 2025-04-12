@@ -19,7 +19,7 @@ hyperparam_tuning:
 # Do multiple evaluation across all models
 # (assumes model contains the relevant hyperparams)
 compare_all:
-  enabled: True
+  enabled: False
   n_samples: 5
   # This is not ideal but I need all configs to be in one place
   deepgp:
