@@ -173,7 +173,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
             plot_title = f"Calibration Curve for {model_name}"
             save_path = f'calibration_{model_name}_{cfg.data.name}.png'
             
-            plot_calibration_curve(conf, acc, y_label="Confidence (max prob)", title=plot_title, relative_save_path=save_path)
+            plot_calibration_curve(conf, acc, y_label="Accuracy", title=plot_title, relative_save_path=save_path)
         
         return metrics
     
