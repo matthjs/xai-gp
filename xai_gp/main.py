@@ -82,8 +82,8 @@ def main(cfg: DictConfig):
     
     wandb.log(metrics)
     
-    if cfg.data.task_type == "regression":
-        run_shift_analysis(model, test_loader, cfg, device)
+    if cfg.data.task_type == "classification":
+        run_shift_analysis(model, train_loader, val_loader, test_loader, input_shape, cfg, device)
 
 
 if __name__ == "__main__":

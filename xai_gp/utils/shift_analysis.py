@@ -7,6 +7,7 @@ from xai_gp.utils.evaluation import evaluate_model
 from xai_gp.utils.training import collate_fn
 import wandb
 from xai_gp.utils.shift import apply_shift  # Import our unified shift function
+from xai_gp.utils.training import initialize_model, train_model
 
 def plot_aggregated_boxplot(results, severity_levels, metric, ylabel):
     aggregated = {sev: [] for sev in severity_levels}
@@ -37,7 +38,6 @@ def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type
     """
     Evaluate the model on shifted test data.
     
-    For classification tasks, return accuracy and expected calibration error (ECE).
     For regression tasks, return MAE, calibration error and derived empirical coverage.
     """
     print("Start of shift analysis")
@@ -58,52 +58,63 @@ def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type
     
     if cfg.data.task_type == "classification":
         accuracy = metrics['accuracy']
-        ece = metrics['calibration_error']
-        return {"severity": severity, "accuracy": accuracy, "ece": ece}
+        cal_error = metrics['calibration_error']
+        return {"severity": severity, "accuracy": accuracy, "cal_error": cal_error}
     else:
         mae = metrics['mae']
         cal_error = metrics['calibration_error']
         return {"severity": severity, "mae": mae, "cal_error": cal_error}
 
-def run_shift_analysis(model, test_loader, cfg, device):
+def run_shift_analysis(model, train_loader, val_loader, test_loader, input_shape, cfg, device):
     """
     Run shift analysis for both regression and classification.
-    For classification tasks, use the 16 image corruption types.
     For regression tasks, use simple numeric shift types.
     
     For regression, this version also saves the results per method so that you can later
     combine the outputs from different models into one big grouped plot.
     """
+    num_runs = 5
     results = {}
-    
-    if cfg.data.task_type == "classification":
-        corruption_types = [
-            "Glass Blur", "Impulse Noise", "Pixelate", "Saturate", "Brightness", "Contrast",
-            "Defocus Blur", "Elastic Transform", "Shot noise", "Spatter", "Speckle noise",
-            "Zoom blur", "Fog", "Frost", "Gaussian Blur", "Gaussian noise"
-        ]
-        severity_levels = [0, 1, 2, 3, 4, 5]
+    corruption_types = ["gaussian", "mask", "scaling", "permute", "outlier"]
+    severity_levels = [0, 0.1, 0.2, 0.4, 0.6, 0.8]
+
+    # Iterate over independent runs
+    for run in range(num_runs):
+        # Set random seed for reproducibility within this run
+        seed = run
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        import random
+        random.seed(seed)
+        
+        # Initialize and train the model once per run
+        model, optimizer = initialize_model(cfg, input_shape, device)
+        train_model(model, train_loader, optimizer, cfg, val_loader=val_loader)
+        
+        # For each corruption type and severity, evaluate the already trained model
         for corruption in corruption_types:
-            results[corruption] = []
+            if corruption not in results:
+                results[corruption] = {}
             for sev in severity_levels:
+                if sev not in results[corruption]:
+                    results[corruption][sev] = []
                 metric_dict = evaluate_under_shift(model, test_loader, cfg, cfg.training.batch_size, device, corruption, sev)
-                results[corruption].append(metric_dict)
-                print(f"Corruption: {corruption}, Severity: {sev}, Accuracy: {metric_dict['accuracy']:.4f}, ECE: {metric_dict['ece']:.4f}")
-        plot_aggregated_boxplot(results, severity_levels, metric="ece", ylabel="Expected Calibration Error")
-        plot_aggregated_boxplot(results, severity_levels, metric="accuracy", ylabel="Accuracy")
+                results[corruption][sev].append(metric_dict)
+                
+                # Log the results (adjust output for classification or regression tasks)
+                if cfg.data.task_type == "classification":
+                    print(f"Run: {run}, Corruption: {corruption}, Severity: {sev}, Accuracy: {metric_dict['accuracy']:.4f}, Cal_error: {metric_dict['cal_error']:.4f}")
+                else:
+                    print(f"Run: {run}, Corruption: {corruption}, Severity: {sev}, MAE: {metric_dict['mae']:.4f}, Cal Error: {metric_dict['cal_error']:.4f}")
+
+
     
+    print("Results", results)
+    if cfg.data.task_type == "classification":
+        plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Empirical Calibration Error")
+        plot_aggregated_boxplot(results, severity_levels, metric="accuracy", ylabel="Accuracy")
     else:
-        # Regression branch.
-        shift_types = ["gaussian", "mask", "scaling"]
-        severity_levels = [0.0, 0.1, 0.2, 0.4, 0.6, 0.8]
-        for shift in shift_types:
-            results[shift] = []
-            for sev in severity_levels:
-                metric_dict = evaluate_under_shift(model, test_loader, cfg, cfg.training.batch_size, device, shift, sev)
-                results[shift].append(metric_dict)
-                print(f"Shift: {shift}, Severity: {sev}, MAE: {metric_dict['mae']:.4f}, Cal Error: {metric_dict['cal_error']:.4f}")
-        # Plot individual aggregated boxplots for regression.
-        plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Calibration Error")
+        plot_aggregated_boxplot(results, severity_levels, metric="cal_error", ylabel="Empirical Calibration Error")
         plot_aggregated_boxplot(results, severity_levels, metric="mae", ylabel="MAE")
         # Save these results along with the model method for later combined analysis.
         #save_path = os.path.join('../results', 'shift_analysis', f"regression_results_{cfg.model.type}.npz")
