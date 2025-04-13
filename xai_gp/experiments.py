@@ -1,13 +1,14 @@
+"""
+This is a separate script for the ablation experiments. The main experiment of the paper are ran
+through `main.py`.
+"""
+
 from matplotlib.ticker import FormatStrFormatter
 from omegaconf import DictConfig
 import matplotlib.pyplot as plt
 from xai_gp.models.gp import DeepGPModel, DSPPModel, fit_gp
-from xai_gp.utils.training import train_model, prepare_data, initialize_model
-from xai_gp.utils.evaluation import evaluate_model, is_gp_model
-from xai_gp.hyperparam_tuning.hyperparameter_optimization import (
-    run_hyperparameter_optimization,
-    get_best_model
-)
+from xai_gp.utils.training import prepare_data
+from xai_gp.utils.evaluation import evaluate_model
 import torch
 import hydra
 
@@ -20,7 +21,8 @@ def ablation_inducing(cfg) -> None:
     # Consider a single layer GP
     hidden_layer_config = [
         {
-            'output_dims': 2 if cfg.data.task_type == "classification" else None,  # Last layer (output) - None for univariate regression
+            # Warning: for simplicity we assume 2 classes but if needed this should be extended
+            'output_dims': 2 if cfg.data.task_type == "classification" else None,
             'mean_type': 'constant'  # Constant mean for final layer
         }
     ]
@@ -68,7 +70,6 @@ def ablation_inducing(cfg) -> None:
     plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
     plt.savefig("inducing_points_vs_nll.png", dpi=300)
     plt.savefig("inducing_points_vs_nll.svg", dpi=300)
-    # plt.show()
 
 
 def ablation_layers(cfg) -> None:
