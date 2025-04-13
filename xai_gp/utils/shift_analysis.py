@@ -6,14 +6,14 @@ from torch.utils.data import DataLoader, TensorDataset
 from xai_gp.utils.evaluation import evaluate_model
 from xai_gp.utils.training import collate_fn
 import wandb
-from xai_gp.utils.shift import apply_shift  # Import our unified shift function
+from xai_gp.utils.shift import apply_shift 
 from xai_gp.utils.training import initialize_model, train_model
 
 def plot_aggregated_boxplot(cfg, results, severity_levels, metric, ylabel):
     aggregated = {sev: [] for sev in severity_levels}
     # Iterate over each corruption type
     for corruption, sev_dict in results.items():
-        # Now iterate over each severity level and its corresponding result list
+        # Iterate over each severity level and its corresponding result list
         for sev, entries in sev_dict.items():
             for entry in entries:
                 # entry is now the dictionary containing the metrics
@@ -75,21 +75,21 @@ def run_shift_analysis(train_loader, val_loader, test_loader, input_shape, cfg, 
     For regression, this version also saves the results per method so that you can later
     combine the outputs from different models into one big grouped plot.
     """
-    num_runs = 5
+    num_runs = cfg.shift_analysis.n_runs
     results = {}
     corruption_types = ["gaussian", "mask", "scaling", "permute", "outlier"]
     severity_levels = [0, 0.1, 0.2, 0.4, 0.6, 0.8]
 
     # Iterate over independent runs
     for run in range(num_runs):
-        # Set random seed for reproducibility within this run
+        # Random seed
         seed = run
         torch.manual_seed(seed)
         np.random.seed(seed)
         import random
         random.seed(seed)
         
-        # Initialize and train the model once per run
+        # Initializing and training the model once per run
         model, optimizer = initialize_model(cfg, input_shape, device)
         train_model(model, train_loader, optimizer, cfg, val_loader=val_loader)
         
@@ -103,7 +103,6 @@ def run_shift_analysis(train_loader, val_loader, test_loader, input_shape, cfg, 
                 metric_dict = evaluate_under_shift(model, test_loader, cfg, cfg.training.batch_size, device, corruption, sev)
                 results[corruption][sev].append(metric_dict)
                 
-                # Log the results (adjust output for classification or regression tasks)
                 if cfg.data.task_type == "classification":
                     print(f"Run: {run}, Corruption: {corruption}, Severity: {sev}, Accuracy: {metric_dict['accuracy']:.4f}, Cal_error: {metric_dict['cal_error']:.4f}")
                 else:

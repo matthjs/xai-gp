@@ -18,6 +18,7 @@ hyperparam_tuning:
 
 shift_analysis:
   enabled: False
+  n_runs: 5
 
 # Do multiple evaluation across all models
 # (assumes model contains the relevant hyperparams)

@@ -62,7 +62,7 @@ def outlier(X, severity):
 
 def apply_shift(X, shift_type, severity):
     """
-    Apply a synthetic shift to the input data X.
+    Apply a synthetic shift to the input X.
     
     Supported shift types:
       - "gaussian": Adds Gaussian noise.
