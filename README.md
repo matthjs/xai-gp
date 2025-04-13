@@ -1,6 +1,6 @@
 # XAI-GP: Explainable AI with Gaussian Processes
 
-A simple implementation of probabilistic machine learning models with uncertainty quantification, focusing on Gaussian Processes and Deep Ensembles.
+A simple implementation of probabilistic machine learning models with uncertainty quantification, focusing on Gaussian Processes and Deep Ensembles. This project addresses the shortcomings of prior work by providing a detailed comparison of the models with respect to calibration, model performance, and robustness under distributional shifts.
 
 ## Usage
 
