@@ -51,7 +51,7 @@ We save the weights of our optimized model inside the `results/weights` director
 
 ## Credits
 
-We utilize code from [mvaldenegro](https://github.com/mvaldenegro/keras-uncertainty) to determine the calibration of our models.
+We utilize code from [mvaldenegro](https://github.com/mvaldenegro/keras-uncertainty) to determine the calibration of our models. Additionally, the implementation of our DeepGP models is based on this [example from the GPytorch Documentation](https://docs.gpytorch.ai/en/stable/examples/05_Deep_Gaussian_Processes/Deep_Gaussian_Processes.html).
 
 # License
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](./LICENSE) file for details.
