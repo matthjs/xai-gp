@@ -24,6 +24,7 @@ def main(cfg: DictConfig):
     train_loader, val_loader, test_loader, input_shape = prepare_data(cfg, device)
     
     is_tuning = cfg.get("hyperparam_tuning", {}).get("enabled", False)
+    shift_analysis = cfg.get("shift_analysis", {}).get("enabled", False)
     tuning_mode = "optimized" if is_tuning else 'standard'
     wandb_name = f"{cfg.model.type}_{cfg.data.name}_{tuning_mode}"
 
@@ -61,6 +62,9 @@ def main(cfg: DictConfig):
 
         statistical_comparison(cfg, train_loader, val_loader, test_loader, input_shape, device)
         return
+    elif shift_analysis:
+        run_shift_analysis(train_loader, val_loader, test_loader, input_shape, cfg, device)
+        return
     else:
         wandb_config = OmegaConf.to_container(
             cfg, resolve=True, throw_on_missing=True
@@ -82,8 +86,7 @@ def main(cfg: DictConfig):
     
     wandb.log(metrics)
     
-    if cfg.data.task_type == "classification":
-        run_shift_analysis(model, train_loader, val_loader, test_loader, input_shape, cfg, device)
+    
 
 
 if __name__ == "__main__":
