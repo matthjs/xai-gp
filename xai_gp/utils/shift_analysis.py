@@ -9,6 +9,12 @@ import wandb
 from xai_gp.utils.shift import apply_shift 
 from xai_gp.utils.training import initialize_model, train_model
 
+
+"""
+To evaluate model calibration under distribution shift, we apply controlled 
+input perturbations inspired by the framework of Ovadia et al. (2019).
+"""
+
 def plot_aggregated_boxplot(cfg, results, severity_levels, metric, ylabel):
     aggregated = {sev: [] for sev in severity_levels}
     # Iterate over each corruption type
@@ -70,10 +76,7 @@ def evaluate_under_shift(model, test_loader, cfg, batch_size, device, shift_type
 def run_shift_analysis(train_loader, val_loader, test_loader, input_shape, cfg, device):
     """
     Run shift analysis for both regression and classification.
-    For regression tasks, use simple numeric shift types.
-    
-    For regression, this version also saves the results per method so that you can later
-    combine the outputs from different models into one big grouped plot.
+    Save the results to then combine the outputs from different models into one big grouped plot.
     """
     num_runs = cfg.shift_analysis.n_runs
     results = {}
