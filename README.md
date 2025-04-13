@@ -49,5 +49,9 @@ IDEs like Pycharm will be able to detect the interpreter of this virtual environ
 
 We save the weights of our optimized model inside the `results/weights` directory.
 
+## Credits
+
+We utilize code from [mvaldenegro](https://github.com/mvaldenegro/keras-uncertainty) to determine the calibration of our models.
+
 # License
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](./LICENSE) file for details.
