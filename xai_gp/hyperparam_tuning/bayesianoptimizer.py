@@ -1,5 +1,4 @@
-from typing import Dict, Optional, Callable, Tuple, List
-import torch
+from typing import Callable, Tuple, List
 from ax import Experiment
 from ax.service.ax_client import AxClient
 import torch

@@ -2,12 +2,9 @@ import json
 import os
 from functools import partial
 from typing import Dict, Any, Tuple
-from omegaconf import OmegaConf
-
 import torch
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader
-
 from xai_gp.hyperparam_tuning.bayesianoptimizer import BayesianOptimizer
 from xai_gp.hyperparam_tuning.wrappers import (
     generic_model_factory, train_gp, train_ensemble, 
@@ -137,7 +134,7 @@ def run_hyperparameter_optimization(
     # Create evaluation function
     eval_fn = partial(evaluate_model, test_loader=test_loader, cfg=cfg)
     
-    objective = 'nll' # if cfg.data.task_type == 'regression' else 'accuracy'
+    objective = 'nll'   # Currently not configurable, adjust if needed
     minimize = True if objective in ['mae', 'nll', 'mse', 'calibration_error'] else False
     
     # Create and run optimizer

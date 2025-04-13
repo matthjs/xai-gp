@@ -4,8 +4,6 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import wandb
-from sklearn.metrics import f1_score
-
 from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.utils.calibration import (
     regressor_calibration_curve,
@@ -13,6 +11,7 @@ from xai_gp.utils.calibration import (
     classifier_calibration_curve,
     classifier_calibration_error,
 )
+
 
 def is_gp_model(model):
     """Check if the model/class is a GP."""
@@ -24,7 +23,7 @@ def is_gp_model(model):
 
 def extract_predictions(model, batch_x, is_classification=False):
     """Extract predictions based on model type."""
-    
+
     if is_classification:
         if is_gp_model(model):
             latent_dist = model(batch_x)  # Latent function values
@@ -44,9 +43,10 @@ def extract_predictions(model, batch_x, is_classification=False):
         else:
             mean, variance = model(batch_x)
             return mean, variance
-    
 
-def plot_calibration_curve(conf, acc, y_label='Empirical Coverage Probability', title="Calibration Curve", relative_save_path='calibration_curve.png'):
+
+def plot_calibration_curve(conf, acc, y_label='Empirical Coverage Probability', title="Calibration Curve",
+                           relative_save_path='calibration_curve.png'):
     """
     Plot the calibration curve for regression uncertainty as a histogram.
     
@@ -100,7 +100,7 @@ def plot_calibration_curve(conf, acc, y_label='Empirical Coverage Probability', 
 
         print(f"Saving calibration curve plot to: {save_path}")
         plt.savefig(save_path)
-        
+
         wandb.log({"calibration_curve": wandb.Image(save_path)})
 
 
@@ -111,9 +111,8 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
     if hasattr(cfg, 'model') and cfg.model is not None and cfg.model.type != "DeepEnsembleClassifier":
         model.eval()
 
-    # Doing it like this for now.
     device = torch.device(cfg.device if torch.cuda.is_available() and cfg.device == 'cuda' else 'cpu')
-    
+
     if cfg.data.task_type == "classification":
         all_probs = []
         all_targets = []
@@ -125,21 +124,22 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
                     batch_x = batch_x.to(device)
                 if batch_y.device != device:
                     batch_y = batch_y.to(device)
-                prob, _ = extract_predictions(model, batch_x, is_classification=True)  # This should now be a tensor of shape (batch_size, num_classes)
+                prob, _ = extract_predictions(model, batch_x,
+                                              is_classification=True)  # This should now be a tensor of shape (batch_size, num_classes)
                 all_probs.append(prob)
                 all_targets.append(batch_y)
-        
+
         test_probs = torch.cat(all_probs, dim=0)
         test_targets = torch.cat(all_targets, dim=0)
-        
+
         # Calculate predicted class labels
         predicted = torch.argmax(test_probs, dim=1)
         accuracy = (predicted == test_targets).float().mean().item()
-        
+
         # Compute Negative Log-Likelihood
         log_probs = torch.log(test_probs + 1e-10)
         nll = F.nll_loss(log_probs, test_targets)
-        
+
         # Compute Brier Score: one-hot encode targets and compute squared difference.
         num_classes = test_probs.size(1)
         one_hot_targets = F.one_hot(test_targets, num_classes=num_classes).float()
@@ -155,28 +155,28 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
 
         conf, acc = classifier_calibration_curve(predicted, test_targets, max_probs)
         error = classifier_calibration_error(predicted, test_targets, max_probs)
-        
+
         print(f"Classification Accuracy: {accuracy:.4f}")
         print(f"NLL Loss: {nll.item():.4f}")
         print(f"Brier Score: {brier_score:.4f}")
-        
+
         metrics = {
             'accuracy': accuracy,
             'nll': nll.item(),
             'brier_score': brier_score,
             'calibration_error': error,
         }
-        
+
         if best_params or plotting:
             # For the plot title, include information about whether we're using optimized parameters
             model_name = cfg.model.type
             plot_title = f"Calibration Curve for {model_name}"
             save_path = f'calibration_{model_name}_{cfg.data.name}.png'
-            
+
             plot_calibration_curve(conf, acc, y_label="Accuracy", title=plot_title, relative_save_path=save_path)
-        
+
         return metrics
-    
+
     else:
         all_means = []
         all_variances = []
@@ -204,13 +204,13 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
 
         test_stds = np.sqrt(test_variances)
         test_targets = test_targets.numpy()
-        
+
         mae = np.mean(np.abs(test_means - test_targets))
         mse = np.mean((test_means - test_targets) ** 2)
         rmse = np.sqrt(mse)
 
         # Negative Log-Likelihood for Gaussian likelihood.
-        # For simplicity I am adding it here but can be defined as a function
+        # For simplicity adding it here but can be defined as a function
         nll = np.mean(
             0.5 * np.log(2 * np.pi * test_variances) + ((test_targets - test_means) ** 2) / (2 * test_variances)
         )
@@ -221,7 +221,7 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
             precomputed_conf=conf,
             precomputed_acc=acc
         )
-        
+
         print(f"Calibration error: {calibration_error:.4f}")
         print(f"nll: {nll:.4f}")
 
@@ -231,9 +231,9 @@ def evaluate_model(model, test_loader, cfg, best_params=None, plotting=False):
             model_name = cfg.model.type
             plot_title = f"Calibration Curve for {model_name}"
             save_path = f'calibration_{model_name}_{cfg.data.name}.png'
-            
+
             plot_calibration_curve(conf, acc, title=plot_title, relative_save_path=save_path)
-        
+
         metrics = {
             'mae': mae,
             'mse': mse,

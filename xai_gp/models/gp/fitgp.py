@@ -48,7 +48,7 @@ def fit_gp(model: GPytorchModel,
            data_loader,
            num_epochs: int,
            optimizer: torch.optim.Optimizer,
-           gp_mode: str = 'DGP',
+           gp_mode: str = 'DSPP',
            beta: float = 0.05,
            val_loader=None,
            ) -> float:
@@ -66,7 +66,7 @@ def fit_gp(model: GPytorchModel,
     elif gp_mode == 'SVGP':
         mll = VariationalELBO(model.likelihood, model.model, num_samples)
     else:
-        mll = ExactMarginalLogLikelihood(model.likelihood, model)
+        raise ValueError("Invalid GP mode passed must be 'DSPP' or 'DeepGP' or 'SVGP'")
 
     start_time = log_training_start(gp_mode, num_epochs, num_samples)
 

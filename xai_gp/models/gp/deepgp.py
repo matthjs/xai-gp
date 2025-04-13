@@ -43,12 +43,15 @@ class DeepGPModel(DeepGP, GPytorchModel):
         :param num_inducing_points: Number of inducing points (per unit) for the variational strategy. Default is 128.
         :param input_transform: Transformation to be applied to the inputs. Default is None.
         :param outcome_transform: Transformation to be applied to the outputs. Default is None.
+        :param classification: Whether to use Softmax likelihood or standard Gaussian likelihood.
+        :param num_classes: Number of classes in case of classification.
         """
         super().__init__()
         input_dims = input_dim
-        # input_dim = train_x_shape[-1]
+
         self.layers = []
-        hidden_layers_config = json.loads(hidden_layers_config) if isinstance(hidden_layers_config, str) else hidden_layers_config
+        hidden_layers_config = json.loads(hidden_layers_config) if isinstance(hidden_layers_config, str) \
+            else hidden_layers_config
 
         # Create hidden layers based on the provided configuration
         for layer_config in hidden_layers_config:
@@ -64,7 +67,8 @@ class DeepGPModel(DeepGP, GPytorchModel):
         # Add all layers as module list
         self.out_dim = input_dims
         self.layers = torch.nn.ModuleList(self.layers)
-        self.likelihood = SoftmaxLikelihood(num_classes=num_classes, num_features=self.out_dim, mixing_weights=False) if classification else GaussianLikelihood()
+        self.likelihood = SoftmaxLikelihood(num_classes=num_classes, num_features=self.out_dim, mixing_weights=False) \
+            if classification else GaussianLikelihood()
         self._num_outputs = 1
         self.double()
         self.intermediate_outputs = None
@@ -90,7 +94,7 @@ class DeepGPModel(DeepGP, GPytorchModel):
     def posterior(
             self,
             X: Tensor,
-            apply_likelihood: bool = False,  # Renamed from observation_noise
+            apply_likelihood: bool = False,
             *args, **kwargs
     ) -> Union[MultivariateNormal, Categorical]:
         """

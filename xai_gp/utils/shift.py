@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def gaussian_noise(X, severity):
     """
     Add Gaussian noise to features.
@@ -7,6 +8,7 @@ def gaussian_noise(X, severity):
     """
     noise = np.random.normal(loc=0, scale=severity * np.std(X, axis=0), size=X.shape)
     return X + noise
+
 
 def masking(X, severity):
     """
@@ -18,6 +20,7 @@ def masking(X, severity):
     X_shifted[mask] = 0
     return X_shifted
 
+
 def scaling(X, severity):
     """
     Feature scaling shift: uniformly scale features.
@@ -25,6 +28,7 @@ def scaling(X, severity):
     """
     scaling_factor = 1 + severity
     return X * scaling_factor
+
 
 def permute_features(X, severity):
     """
@@ -45,6 +49,7 @@ def permute_features(X, severity):
         X_shifted[:, j] = permuted_col
     return X_shifted
 
+
 def outlier(X, severity):
     """
     Add outlier noise to randomly selected feature entries.
@@ -59,6 +64,7 @@ def outlier(X, severity):
     mask = np.random.rand(*X.shape) < severity
     X_shifted[mask] += noise[mask]
     return X_shifted
+
 
 def apply_shift(X, shift_type, severity):
     """

@@ -1,15 +1,12 @@
+"""
+Utility functions for the BayesianOptimizer.
+"""
 from typing import Dict, Any
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from xai_gp.models.ensemble import DeepEnsembleRegressor, DeepEnsembleClassifier, train_ensemble_regression, \
     train_ensemble_classification
 from xai_gp.models.gp import DSPPModel, DeepGPModel, fit_gp
-import numpy as np
-import torch
-from sklearn.metrics import r2_score
-
-from xai_gp.utils.calibration import regressor_calibration_error, regressor_calibration_curve
-from xai_gp.utils.evaluation import extract_predictions, is_gp_model
 
 
 def generic_model_factory(params: Dict[str, Any], model_type: str = 'DeepGP') -> nn.Module:
@@ -19,8 +16,8 @@ def generic_model_factory(params: Dict[str, Any], model_type: str = 'DeepGP') ->
     :param model_type: 'DGP' or 'DSPP', 'DeepEnsembleRegressor', 'DeepEnsembleClassifier'
 
     Tip: Use partial when passing this as a callable ->
-    partial(create_gp(gp_mode='DGP')) for a DGP factory function.
-    partial(create_gp(gp_mode='DSPP')) for a DSPP factory function.
+    partial(create_gp, gp_mode='DGP') for a DGP factory function.
+    partial(create_gp, gp_mode='DSPP') for a DSPP factory function.
     """
     if model_type == 'DSPPModel':
         return DSPPModel(**params)
@@ -38,13 +35,13 @@ def generic_model_factory(params: Dict[str, Any], model_type: str = 'DeepGP') ->
 def train_gp(model: nn.Module, params: Dict[str, Any], data_loader: DataLoader, gp_mode: str) -> float:
     """
     Use partial when passing to Bayesian optimizer
-    partial(train_gp(data_loader=some_data_loader, gp_mode='DGP'))
+    partial(train_gp, data_loader=some_data_loader, gp_mode='DGP')
     :param model: model
     :param params: arguments
     :param data_loader
     :param gp_mode
     """
-    # For simplicity I will fixed the optimizer here
+    # For simplicity fix the optimizer
     optimizer = optim.Adam(model.parameters(),
                            lr=params['lr'])  # Modify this if you want more hyperparams to vary.
 
@@ -54,7 +51,6 @@ def train_gp(model: nn.Module, params: Dict[str, Any], data_loader: DataLoader, 
         gp_mode=gp_mode,
         num_epochs=params['num_epochs'],
         optimizer=optimizer,
-        # Beta by default is 0.05
     )  # Returns train loss
 
 
@@ -79,7 +75,7 @@ def train_ensemble(model: nn.Module, params: Dict[str, Any], data_loader: DataLo
         raise ValueError("Invalid task type.")
 
 
-def print_metrics(metrics, task_type="regression"):
+def print_metrics(metrics: dict, task_type: str = "regression") -> None:
     """Print formatted evaluation metrics."""
     print("\nEvaluation Results:")
     print(f"MAE: {metrics['mae']:.4f}")

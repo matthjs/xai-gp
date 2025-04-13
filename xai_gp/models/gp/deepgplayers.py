@@ -2,7 +2,7 @@ from typing import Optional
 import gpytorch
 import torch
 from gpytorch.distributions import MultivariateNormal
-from gpytorch.kernels import RBFKernel, ScaleKernel, MaternKernel
+from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.means import ConstantMean, LinearMean
 from gpytorch.models.deep_gps import DeepGPLayer
 from gpytorch.models.deep_gps.dspp import DSPPLayer
@@ -15,12 +15,12 @@ class DSPPHiddenLayer(DSPPLayer):
     def __init__(self, input_dims, output_dims, num_inducing=300, inducing_points=None, mean_type='constant', Q=8):
         if inducing_points is not None and output_dims is not None and inducing_points.dim() == 2:
             # The inducing points were passed in, but the shape doesn't match the number of GPs in this layer.
-            # Let's assume we wanted to use the same inducing point initialization for each GP in the layer,
+            # Assume we want to use the same inducing point initialization for each GP in the layer,
             # and expand the inducing points to match this.
             inducing_points = inducing_points.unsqueeze(0).expand((output_dims,) + inducing_points.shape)
             inducing_points = inducing_points.clone() + 0.01 * torch.randn_like(inducing_points)
         if inducing_points is None:
-            # No inducing points were specified, let's just initialize them randomly.
+            # No inducing points were specified, initialize them randomly.
             if output_dims is None:
                 # An output_dims of None implies there is only one GP in this layer
                 # (e.g., the last layer for univariate regression).
@@ -31,7 +31,7 @@ class DSPPHiddenLayer(DSPPLayer):
             # Get the number of inducing points from the ones passed in.
             num_inducing = inducing_points.size(-2)
 
-        # Let's use mean field / diagonal covariance structure.
+        # Use mean field / diagonal covariance structure.
         variational_distribution = MeanFieldVariationalDistribution(
             num_inducing_points=num_inducing,
             batch_shape=torch.Size([output_dims]) if output_dims is not None else torch.Size([])
@@ -50,14 +50,12 @@ class DSPPHiddenLayer(DSPPLayer):
         super(DSPPHiddenLayer, self).__init__(variational_strategy, input_dims, output_dims, Q)
 
         if mean_type == 'constant':
-            # We'll use a constant mean for the final output layer.
+            # Use a constant mean for the final output layer.
             self.mean_module = ConstantMean(batch_shape=batch_shape)
         elif mean_type == 'linear':
             # As in Salimbeni et al. 2017, we find that using a linear mean for the hidden layer improves performance.
             self.mean_module = LinearMean(input_dims, batch_shape=batch_shape)
 
-        # Example in documentation used Matern kernel, but for consistency with DGP use
-        # RBF kernel.
         self.covar_module = ScaleKernel(RBFKernel(batch_shape=batch_shape, ard_num_dims=input_dims),
                                         batch_shape=batch_shape, ard_num_dims=None)
 

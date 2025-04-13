@@ -1,10 +1,5 @@
-from PIL import Image
-from sklearn.datasets import make_moons
-
 from xai_gp.models.gp import fit_gp
 from xai_gp.models.ensemble import train_ensemble_regression, train_ensemble_classification
-from xai_gp.models.gp import DeepGPModel, DSPPModel
-from xai_gp.utils.logging import log_training_start, log_training_end
 from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.models.ensemble import (
     DeepEnsembleRegressor,
@@ -12,16 +7,14 @@ from xai_gp.models.ensemble import (
     DeepEnsembleClassifier
 )
 from xai_gp.utils.evaluation import is_gp_model
-
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import torch
-from torchvision.datasets import CIFAR100, CIFAR10
-from torchvision import transforms
 from torch.utils.data import random_split
 import os
+
 
 # Helper function to move data to the GPU
 def collate_fn(batch, device='cuda'):
@@ -34,7 +27,6 @@ def collate_fn(batch, device='cuda'):
 def prepare_data(cfg, device):
     dataset_path = cfg.data.path
     if cfg.data.name.lower() == "esr":
-        print("dataset_path", dataset_path)
         # Load the dataset
         df = pd.read_csv(dataset_path)
 
@@ -72,39 +64,6 @@ def prepare_data(cfg, device):
         test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
         input_shape = X_tensor.shape
-
-        """
-        # Define image transforms including normalization.
-        transform = transforms.Compose([
-            transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
-            transforms.ToTensor(),  # Shape: [1, H, W]
-            transforms.Normalize(mean=[0.5], std=[0.5]),   # Check this
-            transforms.Lambda(lambda x: x.flatten())  # Flatten to 1D vector
-        ])
-
-        # Load CIFAR-10 using torchvision.
-        full_train_dataset = CIFAR10(root=cfg.data.path, train=True, download=True, transform=transform)
-        test_dataset = CIFAR10(root=cfg.data.path, train=False, download=True, transform=transform)
-
-        # Split the training dataset into training and validation sets
-        val_size = int(len(full_train_dataset) * cfg.data.test_size)
-        train_size = len(full_train_dataset) - val_size
-        train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
-
-        # Create data loaders with the custom collate function
-        train_loader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=cfg.training.shuffle,
-                                  collate_fn=collate_fn)
-        val_loader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
-        test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_fn)
-
-        # For CIFAR-10, the input shape is (3, 32, 32).
-        input_shape = (32 * 32,)  # Since it's grayscale and flattened
-
-        print("CIFAR-10 dataset loaded.")
-        print(f"Training samples: {len(train_dataset)}")
-        print(f"Validation samples: {len(val_dataset)}")
-        print(f"Test samples: {len(test_dataset)}")
-        """
 
         return train_loader, val_loader, test_loader, input_shape
 
@@ -221,7 +180,7 @@ def train_model(model, train_loader, optimizer, cfg, best_params=None, val_loade
             loss = train_ensemble_classification(model, train_loader, num_epochs, learning_rate, val_loader=val_loader)
         else:
             raise ValueError(f"Unknown task type: {cfg.data.task_type}. Must be 'regression' or 'classification'.")
-        
+
     # Save the model
     os.makedirs("../results/weights", exist_ok=True)
     model_path = f"../results/weights/{cfg.model.type}_{cfg.data.task_type}_model.pth"

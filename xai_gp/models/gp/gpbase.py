@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Union
-import gpytorch
 from gpytorch.distributions import MultivariateNormal
 from torch import Tensor
 from torch.distributions import Categorical

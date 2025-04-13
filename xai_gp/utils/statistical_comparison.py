@@ -1,13 +1,10 @@
+"""
+Not used for the paper but can be used to get more a more robust statistical comparison.
+"""
 import numpy as np
 import pandas as pd
-from collections import defaultdict
-
 from baycomp import CorrelatedTTest
 from torch.utils.data import Subset, DataLoader
-from tqdm.contrib import itertools
-
-from xai_gp.models.ensemble import DeepEnsembleRegressor
-from xai_gp.models.gp import DeepGPModel, DSPPModel
 from xai_gp.utils.evaluation import evaluate_model
 from xai_gp.utils.training import initialize_model, train_model
 
@@ -109,7 +106,6 @@ def statistical_comparison(cfg, train_loader, val_loader, test_loader, input_sha
             stddev = np.std(values)
             data[(model_type, metric)] = {'mean': mean, 'stdev': stddev}
 
-    # Convert to a DataFrame for better visualization
     df = pd.DataFrame(data)
 
     # Transpose to get metrics as rows and predictors as columns

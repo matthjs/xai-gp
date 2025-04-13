@@ -1,11 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 import time
-
 from torch.distributions import MultivariateNormal
-from xai_gp.models.ensemble.deepensembleclassifier import DeepEnsembleClassifier, sampling_softmax
+from xai_gp.models.ensemble.deepensembleclassifier import DeepEnsembleClassifier
 from xai_gp.models.ensemble.deepensembleregressor import DeepEnsembleRegressor
 from xai_gp.utils.logging import log_training_start, log_epoch_stats, log_training_end
 
