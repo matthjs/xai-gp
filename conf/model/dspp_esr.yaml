@@ -1,0 +1,14 @@
+type: "DSPPModel"
+gp_mode: "DSPP"
+num_inducing_points: 50
+beta: 1 
+
+# Same as GP for now
+hidden_layers:
+  - output_dims: 5
+    mean_type: "linear"
+  - output_dims: 5
+    mean_type: "linear"
+  - output_dims: 2
+    mean_type: "constant"
+

@@ -16,6 +16,9 @@ hyperparam_tuning:
   enabled: False  # Set to true to enable Bayesian optimization
   n_trials: 20    # Number of trials to run
 
+shift_analysis:
+  enabled: False
+
 # Do multiple evaluation across all models
 # (assumes model contains the relevant hyperparams)
 compare_all:
