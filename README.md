@@ -2,7 +2,7 @@
 
 A simple implementation of probabilistic machine learning models with uncertainty quantification, focusing on Gaussian Processes and Deep Ensembles. This project addresses the shortcomings of prior work by providing a detailed comparison of the models with respect to calibration, model performance, and robustness under distributional shifts.
 
-The associated paper is available on [arXiv](https://arxiv.org/abs/2504.17719)
+The associated paper is available on [arXiv](https://arxiv.org/abs/2504.17719).
 
 ## Usage
 
